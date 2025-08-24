@@ -14,12 +14,12 @@ namespace Lexer {
 // ============================================================================
 
 StateMachine::StateMachine() 
-    : current_state_(LexerState::START), error_handler_(nullptr) {
+    : current_state_(LexerState::START), error_handler_(nullptr), last_processed_char_('\0'), accepting_char_('\0') {
     buildTransitionTable();
 }
 
 StateMachine::StateMachine(std::shared_ptr<ErrorHandler> error_handler)
-    : current_state_(LexerState::START), error_handler_(error_handler) {
+    : current_state_(LexerState::START), error_handler_(error_handler), last_processed_char_('\0'), accepting_char_('\0') {
     buildTransitionTable();
 }
 
@@ -43,12 +43,50 @@ LexerState StateMachine::transition(char input) {
         );
     }
     
+    // Se o próximo estado é de aceitação de operador ou delimitador, armazenar o caractere do operador
+    if (next_state == LexerState::ACCEPT_OPERATOR || next_state == LexerState::ACCEPT_DELIMITER) {
+        // Para operadores, armazenar o caractere baseado no estado atual
+        switch (current_state_) {
+            case LexerState::PLUS: accepting_char_ = '+'; break;
+            case LexerState::MINUS: accepting_char_ = '-'; break;
+            case LexerState::MULTIPLY: accepting_char_ = '*'; break;
+            case LexerState::DIVIDE: accepting_char_ = '/'; break;
+            case LexerState::MODULO: accepting_char_ = '%'; break;
+            case LexerState::ASSIGN: accepting_char_ = '='; break;
+            case LexerState::NOT: accepting_char_ = '!'; break;
+            case LexerState::LESS: accepting_char_ = '<'; break;
+            case LexerState::GREATER: accepting_char_ = '>'; break;
+            case LexerState::BITWISE_AND: accepting_char_ = '&'; break;
+            case LexerState::BITWISE_OR: accepting_char_ = '|'; break;
+            case LexerState::BITWISE_XOR: accepting_char_ = '^'; break;
+            case LexerState::BITWISE_NOT: accepting_char_ = '~'; break;
+            case LexerState::QUESTION: accepting_char_ = '?'; break;
+            case LexerState::COLON: accepting_char_ = ':'; break;
+            // Para delimitadores
+            case LexerState::LEFT_PAREN: accepting_char_ = '('; break;
+            case LexerState::RIGHT_PAREN: accepting_char_ = ')'; break;
+            case LexerState::LEFT_BRACKET: accepting_char_ = '['; break;
+            case LexerState::RIGHT_BRACKET: accepting_char_ = ']'; break;
+            case LexerState::LEFT_BRACE: accepting_char_ = '{'; break;
+            case LexerState::RIGHT_BRACE: accepting_char_ = '}'; break;
+            case LexerState::SEMICOLON: accepting_char_ = ';'; break;
+            case LexerState::COMMA: accepting_char_ = ','; break;
+            case LexerState::DOT: accepting_char_ = '.'; break;
+            default: accepting_char_ = input; break;
+        }
+    }
+    
+    // Armazenar o último caractere processado
+    last_processed_char_ = input;
+    
     current_state_ = next_state;
     return current_state_;
 }
 
 void StateMachine::reset() {
     current_state_ = LexerState::START;
+    last_processed_char_ = '\0';
+    accepting_char_ = '\0';
 }
 
 // ============================================================================
@@ -89,7 +127,11 @@ TokenType StateMachine::getTokenType() const {
 }
 
 TokenType StateMachine::getTokenType(LexerState state) const {
-    return stateToTokenType(state);
+    // Para estados de aceitação de operadores e delimitadores, usar accepting_char_
+    if (state == LexerState::ACCEPT_OPERATOR || state == LexerState::ACCEPT_DELIMITER) {
+        return stateToTokenType(state, accepting_char_);
+    }
+    return stateToTokenType(state, last_processed_char_);
 }
 
 // ============================================================================
@@ -149,13 +191,27 @@ LexerState StateMachine::getNextState(LexerState from_state, char input) const {
             
         case LexerState::IDENTIFIER:
             if (isAlnum(input) || input == '_') return LexerState::IDENTIFIER;
-            return LexerState::ACCEPT_IDENTIFIER;
+            // Caracteres válidos para finalizar um identificador
+            if (isWhitespace(input) || input == '\n' || input == '\0' ||
+                input == ';' || input == ',' || input == ')' || input == '}' ||
+                input == ']' || input == '(' || input == '{' || input == '[') {
+                return LexerState::ACCEPT_IDENTIFIER;
+            }
+            // Outros caracteres são inválidos após um identificador
+            return LexerState::ERROR;
             
         case LexerState::INTEGER:
             if (isDigit(input)) return LexerState::INTEGER;
             if (input == '.') return LexerState::FLOAT_DOT;
             if (input == 'e' || input == 'E') return LexerState::FLOAT_EXP;
-            return LexerState::ACCEPT_INTEGER;
+            // Caracteres válidos para finalizar um inteiro
+            if (isWhitespace(input) || input == '\n' || input == '\0' ||
+                input == ';' || input == ',' || input == ')' || input == '}' ||
+                input == ']' || input == '(' || input == '{' || input == '[') {
+                return LexerState::ACCEPT_INTEGER;
+            }
+            // Caracteres inválidos levam ao erro
+            return LexerState::ERROR;
             
         case LexerState::OCTAL_DIGITS:
             if (input == 'x' || input == 'X') return LexerState::HEX_PREFIX;
@@ -187,7 +243,14 @@ LexerState StateMachine::getNextState(LexerState from_state, char input) const {
         case LexerState::FLOAT_DIGITS:
             if (isDigit(input)) return LexerState::FLOAT_DIGITS;
             if (input == 'e' || input == 'E') return LexerState::FLOAT_EXP;
-            return LexerState::ACCEPT_FLOAT;
+            // Caracteres válidos para finalizar um float
+            if (isWhitespace(input) || input == '\n' || input == '\0' ||
+                input == ';' || input == ',' || input == ')' || input == '}' ||
+                input == ']' || input == '(' || input == '{' || input == '[') {
+                return LexerState::ACCEPT_FLOAT;
+            }
+            // Outros caracteres são inválidos após um float
+            return LexerState::ERROR;
             
         case LexerState::FLOAT_EXP:
             if (input == '+' || input == '-') return LexerState::FLOAT_EXP_SIGN;
@@ -220,10 +283,16 @@ LexerState StateMachine::getNextState(LexerState from_state, char input) const {
             return LexerState::STRING_BODY;
             
         case LexerState::STRING_END:
-            return LexerState::ACCEPT_STRING;
+            // STRING_END transita para ACCEPT_STRING com delimitadores
+            if (isWhitespace(input) || input == '\0' || input == '(' || input == ')' || 
+                input == '[' || input == ']' || input == '{' || input == '}' || 
+                input == ';' || input == ',') {
+                return LexerState::ACCEPT_STRING;
+            }
+            return LexerState::ERROR;
             
         case LexerState::CHAR_START:
-            if (input == '\'') return LexerState::CHAR_END;
+            if (input == '\'') return LexerState::ERROR; // Caractere vazio é inválido
             if (input == '\\') return LexerState::CHAR_ESCAPE;
             if (input != '\n' && input != '\0') return LexerState::CHAR_BODY;
             break;
@@ -236,13 +305,27 @@ LexerState StateMachine::getNextState(LexerState from_state, char input) const {
             return LexerState::CHAR_BODY;
             
         case LexerState::CHAR_END:
-            return LexerState::ACCEPT_CHAR;
+            // Transita para ACCEPT_CHAR apenas com delimitadores válidos
+            if (isWhitespace(input) || input == '\0' ||
+                input == '(' || input == ')' || input == '[' || input == ']' ||
+                input == '{' || input == '}' || input == ';' || input == ',') {
+                return LexerState::ACCEPT_CHAR;
+            }
+            return LexerState::ERROR;
             
         // Estados de operadores
         case LexerState::PLUS:
             if (input == '+') return LexerState::INCREMENT;
             if (input == '=') return LexerState::ACCEPT_OPERATOR; // +=
-            return LexerState::ACCEPT_OPERATOR;
+            // Caracteres válidos para finalizar um operador +
+            if (isWhitespace(input) || input == '\n' || input == '\0' ||
+                isDigit(input) || input == '_' ||
+                input == '(' || input == ')' || input == '[' || input == ']' ||
+                input == '{' || input == '}' || input == ';' || input == ',') {
+                return LexerState::ACCEPT_OPERATOR;
+            }
+            // Outros caracteres são inválidos após +
+            return LexerState::ERROR;
             
         case LexerState::MINUS:
             if (input == '-') return LexerState::DECREMENT;
@@ -296,6 +379,14 @@ LexerState StateMachine::getNextState(LexerState from_state, char input) const {
             
         case LexerState::INCREMENT:
         case LexerState::DECREMENT:
+            // Estados finais de operadores compostos - só aceitam delimitadores
+            if (isWhitespace(input) || input == '\n' || input == '\0' ||
+                input == '(' || input == ')' || input == '[' || input == ']' ||
+                input == '{' || input == '}' || input == ';' || input == ',') {
+                return LexerState::ACCEPT_OPERATOR;
+            }
+            return LexerState::ERROR;
+            
         case LexerState::ARROW:
         case LexerState::LOGICAL_AND:
         case LexerState::LOGICAL_OR:
@@ -311,10 +402,12 @@ LexerState StateMachine::getNextState(LexerState from_state, char input) const {
             return LexerState::LINE_COMMENT;
             
         case LexerState::BLOCK_COMMENT:
+            if (input == '\0') return LexerState::ERROR; // Comentário não terminado
             if (input == '*') return LexerState::BLOCK_COMMENT_END;
             return LexerState::BLOCK_COMMENT;
             
         case LexerState::BLOCK_COMMENT_END:
+            if (input == '\0') return LexerState::ERROR; // Comentário não terminado
             if (input == '/') return LexerState::ACCEPT_COMMENT;
             if (input == '*') return LexerState::BLOCK_COMMENT_END;
             return LexerState::BLOCK_COMMENT;
@@ -331,12 +424,16 @@ LexerState StateMachine::getNextState(LexerState from_state, char input) const {
         case LexerState::DOT:
         case LexerState::COLON:
         case LexerState::QUESTION:
-            return LexerState::ACCEPT_DELIMITER;
+            // Estados finais de delimitadores - só aceitam espaços e alguns caracteres
+            if (isWhitespace(input) || input == '\n' || input == '\0') {
+                return LexerState::ACCEPT_DELIMITER;
+            }
+            return LexerState::ERROR;
             
         // Estados especiais
         case LexerState::WHITESPACE:
             if (isWhitespace(input)) return LexerState::WHITESPACE;
-            return LexerState::START;
+            return LexerState::ERROR; // Caracteres não-whitespace são inválidos
             
         case LexerState::NEWLINE:
             return LexerState::START;
@@ -479,7 +576,7 @@ bool StateMachine::isBinaryDigit(char c) const {
 }
 
 bool StateMachine::isWhitespace(char c) const {
-    return c == ' ' || c == '\t' || c == '\r';
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
 
 // ============================================================================
@@ -616,7 +713,9 @@ bool isAcceptingState(LexerState state) {
         case LexerState::ACCEPT_OCTAL:
         case LexerState::ACCEPT_BINARY:
         case LexerState::ACCEPT_STRING:
+        case LexerState::STRING_END: // STRING_END é um estado de aceitação
         case LexerState::ACCEPT_CHAR:
+        case LexerState::CHAR_END: // CHAR_END é um estado de aceitação
         case LexerState::ACCEPT_OPERATOR:
         case LexerState::ACCEPT_DELIMITER:
         case LexerState::ACCEPT_COMMENT:
@@ -632,6 +731,10 @@ bool isErrorState(LexerState state) {
 }
 
 TokenType stateToTokenType(LexerState state) {
+    return stateToTokenType(state, '\0');
+}
+
+TokenType stateToTokenType(LexerState state, char last_char) {
     switch (state) {
         case LexerState::ACCEPT_IDENTIFIER:
             return TokenType::IDENTIFIER;
@@ -654,9 +757,39 @@ TokenType stateToTokenType(LexerState state) {
         case LexerState::ACCEPT_COMMENT:
             return TokenType::LINE_COMMENT; // ou BLOCK_COMMENT dependendo do contexto
         case LexerState::ACCEPT_OPERATOR:
+            // Determinar o tipo específico do operador baseado no último caractere
+            switch (last_char) {
+                case '+': return TokenType::PLUS;
+                case '-': return TokenType::MINUS;
+                case '*': return TokenType::MULTIPLY;
+                case '/': return TokenType::DIVIDE;
+                case '%': return TokenType::MODULO;
+                case '=': return TokenType::ASSIGN;
+                case '!': return TokenType::LOGICAL_NOT;
+                case '<': return TokenType::LESS_THAN;
+                case '>': return TokenType::GREATER_THAN;
+                case '&': return TokenType::BITWISE_AND;
+                case '|': return TokenType::BITWISE_OR;
+                case '^': return TokenType::BITWISE_XOR;
+                case '~': return TokenType::BITWISE_NOT;
+                default: return TokenType::UNKNOWN;
+            }
         case LexerState::ACCEPT_DELIMITER:
-            // Será determinado pelo contexto específico do operador/delimitador
-            return TokenType::UNKNOWN;
+            // Determinar o tipo específico do delimitador baseado no último caractere
+            switch (last_char) {
+                case '(': return TokenType::LEFT_PAREN;
+                case ')': return TokenType::RIGHT_PAREN;
+                case '[': return TokenType::LEFT_BRACKET;
+                case ']': return TokenType::RIGHT_BRACKET;
+                case '{': return TokenType::LEFT_BRACE;
+                case '}': return TokenType::RIGHT_BRACE;
+                case ';': return TokenType::SEMICOLON;
+                case ',': return TokenType::COMMA;
+                case '.': return TokenType::DOT;
+                case ':': return TokenType::COLON;
+                case '?': return TokenType::CONDITIONAL;
+                default: return TokenType::UNKNOWN;
+            }
         default:
             return TokenType::UNKNOWN;
     }

@@ -14,6 +14,8 @@ LexerMain::LexerMain(const std::string& filename, ErrorHandler* errorHandler)
     , currentColumn(1)
     , currentPosition(0)
     , endOfFile(false)
+    , hasCachedToken(false)
+    , cachedToken(TokenType::UNKNOWN, "", {0, 0, 0})
 {
     // Validar parâmetros
     if (filename.empty()) {
@@ -122,9 +124,10 @@ Token LexerMain::recognizeToken() {
         return recognizeCharacter();
     }
     
-    // Reconhecimento de comentários
+    // Reconhecimento de comentários - pular comentários ao invés de retorná-los como tokens
     if (ch == '/' && (buffer->peek(1) == '/' || buffer->peek(1) == '*')) {
-        return recognizeComment();
+        skipComment();
+        return recognizeToken(); // Recursão para encontrar o próximo token válido
     }
     
     // Reconhecimento de operadores
@@ -147,6 +150,12 @@ Token LexerMain::recognizeToken() {
 
 // Implementação dos métodos principais
 Token LexerMain::nextToken() {
+    // Se há token em cache, retorná-lo
+    if (hasCachedToken) {
+        hasCachedToken = false;
+        return cachedToken;
+    }
+    
     if (endOfFile) {
         Lexer::Position pos;
         pos.line = static_cast<int>(currentLine);
@@ -156,6 +165,11 @@ Token LexerMain::nextToken() {
     }
     
     Token token = recognizeToken();
+    
+    // Se o token é EOF, marcar endOfFile como true
+    if (token.getType() == TokenType::END_OF_FILE) {
+        endOfFile = true;
+    }
     
     // Validar token gerado
     if (!validateToken(token)) {
@@ -189,24 +203,16 @@ Token LexerMain::nextToken() {
 }
 
 Token LexerMain::peekToken() {
-    // Salvar estado atual
-    size_t savedLine = currentLine;
-    size_t savedColumn = currentColumn;
-    size_t savedPosition = currentPosition;
-    LexerState savedState = currentState;
-    bool savedEOF = endOfFile;
+    // Se já há token em cache, retorná-lo
+    if (hasCachedToken) {
+        return cachedToken;
+    }
     
-    // Obter próximo token
-    Token token = nextToken();
+    // Obter próximo token e armazená-lo em cache
+    cachedToken = nextToken();
+    hasCachedToken = true;
     
-    // Restaurar estado (implementação simplificada)
-    currentLine = savedLine;
-    currentColumn = savedColumn;
-    currentPosition = savedPosition;
-    currentState = savedState;
-    endOfFile = savedEOF;
-    
-    return token;
+    return cachedToken;
 }
 
 std::vector<Token> LexerMain::tokenizeAll() {
@@ -280,6 +286,9 @@ void LexerMain::reset() {
     currentPosition = 0;
     currentState = LexerState::START;
     endOfFile = false;
+    
+    // Limpar cache de token
+    hasCachedToken = false;
     
     // Reinicializar arquivo
     if (sourceFile && sourceFile->is_open()) {
@@ -383,9 +392,23 @@ Token LexerMain::recognizeNumber() {
         ch = buffer->peek();
         if (ch == 'x' || ch == 'X') {
             lexeme += readNextChar();
+            // Verificar se há pelo menos um dígito hexadecimal
+            bool hasHexDigits = false;
             // Ler dígitos hexadecimais
             while ((ch = buffer->peek()) != '\0' && std::isxdigit(ch)) {
                 lexeme += readNextChar();
+                hasHexDigits = true;
+            }
+            // Se não há dígitos hexadecimais, é um erro
+            if (!hasHexDigits) {
+                Lexer::Position errorPos;
+                errorPos.line = static_cast<int>(currentLine);
+                errorPos.column = static_cast<int>(currentColumn);
+                errorPos.offset = static_cast<int>(currentPosition);
+                handleError(ErrorType::INVALID_NUMBER_FORMAT, 
+                           "Invalid hexadecimal number: missing digits after '0x'", 
+                           errorPos);
+                return recoverFromError(ErrorType::INVALID_NUMBER_FORMAT, errorPos);
             }
             // Processar sufixos para hex
             ch = buffer->peek();
@@ -413,9 +436,23 @@ Token LexerMain::recognizeNumber() {
         // Verificar se é binário (0b ou 0B)
         else if (ch == 'b' || ch == 'B') {
             lexeme += readNextChar();
+            // Verificar se há pelo menos um dígito binário
+            bool hasBinaryDigits = false;
             // Ler dígitos binários
             while ((ch = buffer->peek()) != '\0' && (ch == '0' || ch == '1')) {
                 lexeme += readNextChar();
+                hasBinaryDigits = true;
+            }
+            // Se não há dígitos binários, é um erro
+            if (!hasBinaryDigits) {
+                Lexer::Position errorPos;
+                errorPos.line = static_cast<int>(currentLine);
+                errorPos.column = static_cast<int>(currentColumn);
+                errorPos.offset = static_cast<int>(currentPosition);
+                handleError(ErrorType::INVALID_NUMBER_FORMAT, 
+                           "Invalid binary number: missing digits after '0b'", 
+                           errorPos);
+                return recoverFromError(ErrorType::INVALID_NUMBER_FORMAT, errorPos);
             }
             // Processar sufixos para binário
             ch = buffer->peek();
@@ -678,6 +715,12 @@ Token LexerMain::recognizeOperator() {
                 lexeme += readNextChar();
             }
             break;
+        case '~':
+            // Operador bitwise NOT não tem versões compostas
+            break;
+        case '\\':
+            // Backslash para continuação de linha
+            break;
     }
     
     // Mapear lexeme para TokenType
@@ -686,6 +729,7 @@ Token LexerMain::recognizeOperator() {
     else if (lexeme == "-") type = TokenType::MINUS;
     else if (lexeme == "*") type = TokenType::MULTIPLY;
     else if (lexeme == "/") type = TokenType::DIVIDE;
+    else if (lexeme == "%") type = TokenType::MODULO;
     else if (lexeme == "=") type = TokenType::ASSIGN;
     else if (lexeme == "==") type = TokenType::EQUAL;
     else if (lexeme == "!=") type = TokenType::NOT_EQUAL;
@@ -696,14 +740,87 @@ Token LexerMain::recognizeOperator() {
     else if (lexeme == "&&") type = TokenType::LOGICAL_AND;
     else if (lexeme == "||") type = TokenType::LOGICAL_OR;
     else if (lexeme == "!") type = TokenType::LOGICAL_NOT;
+    else if (lexeme == "&") type = TokenType::BITWISE_AND;
+    else if (lexeme == "|") type = TokenType::BITWISE_OR;
+    else if (lexeme == "^") type = TokenType::BITWISE_XOR;
+    else if (lexeme == "~") type = TokenType::BITWISE_NOT;
+    else if (lexeme == "<<") type = TokenType::LEFT_SHIFT;
+    else if (lexeme == ">>") type = TokenType::RIGHT_SHIFT;
     else if (lexeme == "++") type = TokenType::INCREMENT;
     else if (lexeme == "--") type = TokenType::DECREMENT;
     else if (lexeme == "+=") type = TokenType::PLUS_ASSIGN;
     else if (lexeme == "-=") type = TokenType::MINUS_ASSIGN;
     else if (lexeme == "*=") type = TokenType::MULT_ASSIGN;
     else if (lexeme == "/=") type = TokenType::DIV_ASSIGN;
+    else if (lexeme == "%=") type = TokenType::MOD_ASSIGN;
+    else if (lexeme == "&=") type = TokenType::AND_ASSIGN;
+    else if (lexeme == "|=") type = TokenType::OR_ASSIGN;
+    else if (lexeme == "^=") type = TokenType::XOR_ASSIGN;
+    else if (lexeme == "<<=") type = TokenType::LEFT_SHIFT_ASSIGN;
+    else if (lexeme == ">>=") type = TokenType::RIGHT_SHIFT_ASSIGN;
+    else if (lexeme == "->") type = TokenType::ARROW;
+    // Delimitadores
+    else if (lexeme == ";") type = TokenType::SEMICOLON;
+    else if (lexeme == "(") type = TokenType::LEFT_PAREN;
+    else if (lexeme == ")") type = TokenType::RIGHT_PAREN;
+    else if (lexeme == "{") type = TokenType::LEFT_BRACE;
+    else if (lexeme == "}") type = TokenType::RIGHT_BRACE;
+    else if (lexeme == "[") type = TokenType::LEFT_BRACKET;
+    else if (lexeme == "]") type = TokenType::RIGHT_BRACKET;
+    else if (lexeme == ",") type = TokenType::COMMA;
+    else if (lexeme == ".") type = TokenType::DOT;
+    else if (lexeme == ":") type = TokenType::COLON;
+    else if (lexeme == "?") type = TokenType::CONDITIONAL;
+    else if (lexeme == "#") type = TokenType::HASH;
+    else if (lexeme == "\\") {
+        // Backslash - verificar se é continuação de linha
+        if (buffer->peek() == '\n') {
+            // É continuação de linha - pular o backslash e newline
+            readNextChar(); // consome o \n
+            return nextToken(); // retorna o próximo token
+        }
+        type = TokenType::UNKNOWN; // backslash isolado
+    }
     
     return Token(type, lexeme, startPos);
+}
+
+void LexerMain::skipComment() {
+    Lexer::Position startPos;
+    startPos.line = static_cast<int>(currentLine);
+    startPos.column = static_cast<int>(currentColumn);
+    startPos.offset = static_cast<int>(currentPosition);
+    
+    char ch = readNextChar(); // '/'
+    char nextCh = buffer->peek();
+    
+    if (nextCh == '/') {
+        // Comentário de linha - pular até o final da linha
+        readNextChar(); // consumir o segundo '/'
+        
+        while ((ch = buffer->peek()) != '\0' && ch != '\n') {
+            readNextChar();
+        }
+    }
+    else if (nextCh == '*') {
+        // Comentário de bloco - pular até encontrar */
+        readNextChar(); // consumir o '*'
+        
+        bool foundEnd = false;
+        while ((ch = buffer->peek()) != '\0') {
+            ch = readNextChar();
+            if (ch == '*' && buffer->peek() == '/') {
+                readNextChar(); // consumir o '/'
+                foundEnd = true;
+                break;
+            }
+        }
+        
+        if (!foundEnd && errorHandler) {
+            errorHandler->reportError(ErrorType::UNTERMINATED_COMMENT, 
+                                    "Comentário de bloco não terminado", startPos);
+        }
+    }
 }
 
 Token LexerMain::recognizeComment() {
@@ -890,25 +1007,90 @@ bool LexerMain::validateToken(const Token& token) const {
             }
             // Verifica se todos os caracteres são dígitos (exceto prefixos como 0x)
             if (lexeme.length() >= 2 && lexeme[0] == '0' && (lexeme[1] == 'x' || lexeme[1] == 'X')) {
-                // Hexadecimal
-                for (size_t i = 2; i < lexeme.length(); ++i) {
-                    if (!std::isxdigit(lexeme[i])) {
-                        return false;
+                // Hexadecimal - verificar dígitos hex e sufixos
+                size_t i = 2;
+                while (i < lexeme.length() && std::isxdigit(lexeme[i])) {
+                    ++i;
+                }
+                // Verificar sufixos opcionais
+                if (i < lexeme.length()) {
+                    if (lexeme[i] == 'u' || lexeme[i] == 'U') {
+                        ++i;
+                        if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                            ++i;
+                            if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                                ++i; // ULL
+                            }
+                        }
+                    } else if (lexeme[i] == 'l' || lexeme[i] == 'L') {
+                        ++i;
+                        if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                            ++i; // LL
+                        } else if (i < lexeme.length() && (lexeme[i] == 'u' || lexeme[i] == 'U')) {
+                            ++i; // LU
+                        }
                     }
+                }
+                if (i != lexeme.length()) {
+                    return false;
                 }
             } else if (lexeme.length() >= 2 && lexeme[0] == '0' && lexeme[1] == 'b') {
-                // Binário
-                for (size_t i = 2; i < lexeme.length(); ++i) {
-                    if (lexeme[i] != '0' && lexeme[i] != '1') {
-                        return false;
+                // Binário - verificar dígitos binários e sufixos
+                size_t i = 2;
+                while (i < lexeme.length() && (lexeme[i] == '0' || lexeme[i] == '1')) {
+                    ++i;
+                }
+                // Verificar sufixos opcionais
+                if (i < lexeme.length()) {
+                    if (lexeme[i] == 'u' || lexeme[i] == 'U') {
+                        ++i;
+                        if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                            ++i;
+                            if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                                ++i; // ULL
+                            }
+                        }
+                    } else if (lexeme[i] == 'l' || lexeme[i] == 'L') {
+                        ++i;
+                        if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                            ++i; // LL
+                        } else if (i < lexeme.length() && (lexeme[i] == 'u' || lexeme[i] == 'U')) {
+                            ++i; // LU
+                        }
                     }
                 }
+                if (i != lexeme.length()) {
+                    return false;
+                }
             } else {
-                // Decimal
-                for (char ch : lexeme) {
-                    if (!std::isdigit(ch)) {
-                        return false;
+                // Decimal - verificar dígitos e sufixos válidos
+                size_t i = 0;
+                // Verificar dígitos
+                while (i < lexeme.length() && std::isdigit(lexeme[i])) {
+                    ++i;
+                }
+                // Verificar sufixos opcionais: u/U, l/L, ll/LL, ul/UL, ull/ULL
+                if (i < lexeme.length()) {
+                    if (lexeme[i] == 'u' || lexeme[i] == 'U') {
+                        ++i;
+                        if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                            ++i;
+                            if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                                ++i; // ULL
+                            }
+                        }
+                    } else if (lexeme[i] == 'l' || lexeme[i] == 'L') {
+                        ++i;
+                        if (i < lexeme.length() && (lexeme[i] == 'l' || lexeme[i] == 'L')) {
+                            ++i; // LL
+                        } else if (i < lexeme.length() && (lexeme[i] == 'u' || lexeme[i] == 'U')) {
+                            ++i; // LU
+                        }
                     }
+                }
+                // Verificar se todos os caracteres foram processados
+                if (i != lexeme.length()) {
+                    return false;
                 }
             }
             break;
@@ -1007,6 +1189,27 @@ bool LexerMain::validateToken(const Token& token) const {
         case TokenType::SHORT:
         case TokenType::LONG:
         case TokenType::DOUBLE:
+        // Palavras-chave C99
+        case TokenType::INLINE:
+        case TokenType::RESTRICT:
+        case TokenType::_BOOL:
+        case TokenType::_COMPLEX:
+        case TokenType::_IMAGINARY:
+        // Palavras-chave C11
+        case TokenType::_ALIGNAS:
+        case TokenType::_ALIGNOF:
+        case TokenType::_ATOMIC:
+        case TokenType::_STATIC_ASSERT:
+        case TokenType::_NORETURN:
+        case TokenType::_THREAD_LOCAL:
+        case TokenType::_GENERIC:
+        // Palavras-chave C23
+        case TokenType::TYPEOF:
+        case TokenType::TYPEOF_UNQUAL:
+        case TokenType::_BITINT:
+        case TokenType::_DECIMAL128:
+        case TokenType::_DECIMAL32:
+        case TokenType::_DECIMAL64:
             // Palavras-chave devem ter lexema não vazio
             if (lexeme.empty()) {
                 return false;
@@ -1036,6 +1239,16 @@ bool LexerMain::validateToken(const Token& token) const {
         case TokenType::RIGHT_SHIFT:
         case TokenType::INCREMENT:
         case TokenType::DECREMENT:
+        case TokenType::PLUS_ASSIGN:
+        case TokenType::MINUS_ASSIGN:
+        case TokenType::MULT_ASSIGN:
+        case TokenType::DIV_ASSIGN:
+        case TokenType::MOD_ASSIGN:
+        case TokenType::AND_ASSIGN:
+        case TokenType::OR_ASSIGN:
+        case TokenType::XOR_ASSIGN:
+        case TokenType::LEFT_SHIFT_ASSIGN:
+        case TokenType::RIGHT_SHIFT_ASSIGN:
         case TokenType::ARROW:
         case TokenType::DOT:
         case TokenType::SEMICOLON:
@@ -1046,7 +1259,12 @@ bool LexerMain::validateToken(const Token& token) const {
         case TokenType::RIGHT_BRACE:
         case TokenType::LEFT_BRACKET:
         case TokenType::RIGHT_BRACKET:
-            // Operadores e delimitadores devem ter lexema não vazio
+        case TokenType::HASH:
+        case TokenType::CONDITIONAL:
+        case TokenType::COLON:
+        case TokenType::LINE_COMMENT:
+        case TokenType::BLOCK_COMMENT:
+            // Operadores, delimitadores e comentários devem ter lexema não vazio
             if (lexeme.empty()) {
                 return false;
             }

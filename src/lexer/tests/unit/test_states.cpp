@@ -631,6 +631,917 @@ void testCompleteScenario() {
 }
 
 // ============================================================================
+// FASE 5.2 - TESTES DE COMPONENTES
+// ============================================================================
+
+// Teste de transições de estado
+void testStateTransitions() {
+    std::cout << "\n=== Testando Transições de Estado (Fase 5.2) ===" << std::endl;
+    
+    StateMachine sm;
+    
+    // Teste transições básicas START -> outros estados
+    assertEqual(LexerState::IDENTIFIER, sm.transition('a'), "START + 'a' -> IDENTIFIER");
+    sm.reset();
+    assertEqual(LexerState::INTEGER, sm.transition('1'), "START + '1' -> INTEGER");
+    sm.reset();
+    assertEqual(LexerState::PLUS, sm.transition('+'), "START + '+' -> PLUS");
+    sm.reset();
+    assertEqual(LexerState::STRING_START, sm.transition('"'), "START + '\"' -> STRING_START");
+    sm.reset();
+    assertEqual(LexerState::CHAR_START, sm.transition('\''), "START + '\'' -> CHAR_START");
+    sm.reset();
+    assertEqual(LexerState::DIVIDE, sm.transition('/'), "START + '/' -> DIVIDE");
+    sm.reset();
+    
+    // Teste transições de identificadores
+    sm.transition('a'); // IDENTIFIER
+    assertEqual(LexerState::IDENTIFIER, sm.transition('b'), "IDENTIFIER + 'b' -> IDENTIFIER");
+    assertEqual(LexerState::IDENTIFIER, sm.transition('1'), "IDENTIFIER + '1' -> IDENTIFIER");
+    assertEqual(LexerState::IDENTIFIER, sm.transition('_'), "IDENTIFIER + '_' -> IDENTIFIER");
+    assertEqual(LexerState::ACCEPT_IDENTIFIER, sm.transition(' '), "IDENTIFIER + ' ' -> ACCEPT_IDENTIFIER");
+    sm.reset();
+    
+    // Teste transições de números inteiros
+    sm.transition('1'); // INTEGER
+    assertEqual(LexerState::INTEGER, sm.transition('2'), "INTEGER + '2' -> INTEGER");
+    assertEqual(LexerState::FLOAT_DOT, sm.transition('.'), "INTEGER + '.' -> FLOAT_DOT");
+    sm.reset();
+    sm.transition('1'); // INTEGER
+    assertEqual(LexerState::ACCEPT_INTEGER, sm.transition(' '), "INTEGER + ' ' -> ACCEPT_INTEGER");
+    sm.reset();
+    
+    // Teste transições de números float
+    sm.transition('1'); // INTEGER
+    sm.transition('.'); // FLOAT_DOT
+    assertEqual(LexerState::FLOAT_DIGITS, sm.transition('5'), "FLOAT_DOT + '5' -> FLOAT_DIGITS");
+    assertEqual(LexerState::ACCEPT_FLOAT, sm.transition(' '), "FLOAT_DIGITS + ' ' -> ACCEPT_FLOAT");
+    sm.reset();
+    
+    // Teste transições de operadores compostos
+    sm.transition('+'); // PLUS
+    assertEqual(LexerState::INCREMENT, sm.transition('+'), "PLUS + '+' -> INCREMENT");
+    assertEqual(LexerState::ACCEPT_OPERATOR, sm.transition(' '), "INCREMENT + ' ' -> ACCEPT_OPERATOR");
+    sm.reset();
+    
+    sm.transition('-'); // MINUS
+    assertEqual(LexerState::DECREMENT, sm.transition('-'), "MINUS + '-' -> DECREMENT");
+    assertEqual(LexerState::ACCEPT_OPERATOR, sm.transition(' '), "DECREMENT + ' ' -> ACCEPT_OPERATOR");
+    sm.reset();
+    
+    sm.transition('-'); // MINUS
+    assertEqual(LexerState::ARROW, sm.transition('>'), "MINUS + '>' -> ARROW");
+    assertEqual(LexerState::ACCEPT_OPERATOR, sm.transition(' '), "ARROW + ' ' -> ACCEPT_OPERATOR");
+    sm.reset();
+    
+    // Teste transições de comentários
+    sm.transition('/'); // DIVIDE
+    assertEqual(LexerState::LINE_COMMENT, sm.transition('/'), "DIVIDE + '/' -> LINE_COMMENT");
+    assertEqual(LexerState::LINE_COMMENT, sm.transition('t'), "LINE_COMMENT + 't' -> LINE_COMMENT");
+    assertEqual(LexerState::ACCEPT_COMMENT, sm.transition('\n'), "LINE_COMMENT + '\\n' -> ACCEPT_COMMENT");
+    sm.reset();
+    
+    sm.transition('/'); // DIVIDE
+    assertEqual(LexerState::BLOCK_COMMENT, sm.transition('*'), "DIVIDE + '*' -> BLOCK_COMMENT");
+    assertEqual(LexerState::BLOCK_COMMENT, sm.transition('t'), "BLOCK_COMMENT + 't' -> BLOCK_COMMENT");
+    assertEqual(LexerState::BLOCK_COMMENT_END, sm.transition('*'), "BLOCK_COMMENT + '*' -> BLOCK_COMMENT_END");
+    assertEqual(LexerState::ACCEPT_COMMENT, sm.transition('/'), "BLOCK_COMMENT_END + '/' -> ACCEPT_COMMENT");
+    sm.reset();
+    
+    // Teste transições de strings
+    sm.transition('"'); // STRING_START
+    assertEqual(LexerState::STRING_BODY, sm.transition('h'), "STRING_START + 'h' -> STRING_BODY");
+    assertEqual(LexerState::STRING_BODY, sm.transition('i'), "STRING_BODY + 'i' -> STRING_BODY");
+    assertEqual(LexerState::STRING_END, sm.transition('"'), "STRING_BODY + '\"' -> STRING_END");
+    assertEqual(LexerState::ACCEPT_STRING, sm.transition(' '), "STRING_END + ' ' -> ACCEPT_STRING");
+    sm.reset();
+    
+    // Teste transições de caracteres
+    sm.transition('\''); // CHAR_START
+    assertEqual(LexerState::CHAR_BODY, sm.transition('a'), "CHAR_START + 'a' -> CHAR_BODY");
+    assertEqual(LexerState::CHAR_END, sm.transition('\''), "CHAR_BODY + '\'' -> CHAR_END");
+    assertEqual(LexerState::ACCEPT_CHAR, sm.transition(' '), "CHAR_END + ' ' -> ACCEPT_CHAR");
+    sm.reset();
+    
+    // Teste transições para estados de erro
+    assertEqual(LexerState::ERROR, sm.transition('\x01'), "START + caractere inválido -> ERROR");
+    sm.reset();
+    
+    printTestResult("Transições de Estado (Fase 5.2)", true);
+}
+
+// Teste de estados de aceitação
+void testAcceptingStates() {
+    std::cout << "\n=== Testando Estados de Aceitação (Fase 5.2) ===" << std::endl;
+    
+    StateMachine sm;
+    
+    // Teste estado inicial não é de aceitação
+    assertTrue(!sm.isAcceptingState(), "Estado START não é de aceitação");
+    
+    // Teste estados intermediários não são de aceitação
+    sm.transition('a'); // IDENTIFIER
+    assertTrue(!sm.isAcceptingState(), "Estado IDENTIFIER não é de aceitação");
+    sm.reset();
+    
+    sm.transition('1'); // INTEGER
+    assertTrue(!sm.isAcceptingState(), "Estado INTEGER não é de aceitação");
+    sm.reset();
+    
+    sm.transition('+'); // PLUS
+    assertTrue(!sm.isAcceptingState(), "Estado PLUS não é de aceitação");
+    sm.reset();
+    
+    sm.transition('"'); // STRING_START
+    assertTrue(!sm.isAcceptingState(), "Estado STRING_START não é de aceitação");
+    sm.reset();
+    
+    // Teste estados de aceitação para identificadores
+    sm.transition('a'); // IDENTIFIER
+    sm.transition(' '); // ACCEPT_IDENTIFIER
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_IDENTIFIER é de aceitação");
+    assertEqual(TokenType::IDENTIFIER, sm.getTokenType(), "Token type correto para ACCEPT_IDENTIFIER");
+    sm.reset();
+    
+    // Teste estados de aceitação para números inteiros
+    sm.transition('1'); // INTEGER
+    sm.transition(' '); // ACCEPT_INTEGER
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_INTEGER é de aceitação");
+    assertEqual(TokenType::INTEGER_LITERAL, sm.getTokenType(), "Token type correto para ACCEPT_INTEGER");
+    sm.reset();
+    
+    // Teste estados de aceitação para números float
+    sm.transition('1'); // INTEGER
+    sm.transition('.'); // FLOAT_DOT
+    sm.transition('5'); // FLOAT_DIGITS
+    sm.transition(' '); // ACCEPT_FLOAT
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_FLOAT é de aceitação");
+    assertEqual(TokenType::FLOAT_LITERAL, sm.getTokenType(), "Token type correto para ACCEPT_FLOAT");
+    sm.reset();
+    
+    // Teste estados de aceitação para strings
+    sm.transition('"'); // STRING_START
+    sm.transition('h'); // STRING_BODY
+    sm.transition('"'); // STRING_END
+    sm.transition(' '); // ACCEPT_STRING
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_STRING é de aceitação");
+    assertEqual(TokenType::STRING_LITERAL, sm.getTokenType(), "Token type correto para ACCEPT_STRING");
+    sm.reset();
+    
+    // Teste estados de aceitação para caracteres
+    sm.transition('\''); // CHAR_START
+    sm.transition('a'); // CHAR_BODY
+    sm.transition('\''); // CHAR_END
+    sm.transition(' '); // ACCEPT_CHAR
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_CHAR é de aceitação");
+    assertEqual(TokenType::CHAR_LITERAL, sm.getTokenType(), "Token type correto para ACCEPT_CHAR");
+    sm.reset();
+    
+    // Teste estados de aceitação para operadores
+    sm.transition('+'); // PLUS
+    sm.transition(' '); // ACCEPT_OPERATOR
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_OPERATOR é de aceitação");
+    // Agora ACCEPT_OPERATOR pode determinar o tipo específico baseado no último caractere
+    assertTrue(sm.getTokenType() == TokenType::PLUS, "Token type para ACCEPT_OPERATOR é PLUS");
+    sm.reset();
+    
+    // Teste estados de aceitação para delimitadores
+    sm.transition('('); // LEFT_PAREN
+    sm.transition(' '); // ACCEPT_DELIMITER
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_DELIMITER é de aceitação");
+    assertEqual(TokenType::LEFT_PAREN, sm.getTokenType(), "Token type correto para ACCEPT_DELIMITER");
+    sm.reset();
+    
+    // Teste estados de aceitação para comentários
+    sm.transition('/'); // DIVIDE
+    sm.transition('/'); // LINE_COMMENT
+    sm.transition('\n'); // ACCEPT_COMMENT
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_COMMENT é de aceitação");
+    assertEqual(TokenType::LINE_COMMENT, sm.getTokenType(), "Token type correto para ACCEPT_COMMENT");
+    sm.reset();
+    
+    // Teste estado de aceitação para EOF
+    sm.transition('\0'); // END_OF_FILE
+    sm.transition(' '); // ACCEPT_EOF
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_EOF é de aceitação");
+    assertEqual(TokenType::END_OF_FILE, sm.getTokenType(), "Token type correto para ACCEPT_EOF");
+    sm.reset();
+    
+    // Teste método getAcceptingStates
+    auto accepting_states = sm.getAcceptingStates();
+    assertTrue(accepting_states.size() > 0, "getAcceptingStates retorna estados");
+    
+    // Verificar se todos os estados de aceitação estão na lista
+    bool found_accept_identifier = false;
+    bool found_accept_integer = false;
+    bool found_accept_float = false;
+    bool found_accept_string = false;
+    bool found_accept_char = false;
+    bool found_accept_operator = false;
+    bool found_accept_delimiter = false;
+    bool found_accept_comment = false;
+    bool found_accept_eof = false;
+    
+    for (const auto& state : accepting_states) {
+        if (state == LexerState::ACCEPT_IDENTIFIER) found_accept_identifier = true;
+        if (state == LexerState::ACCEPT_INTEGER) found_accept_integer = true;
+        if (state == LexerState::ACCEPT_FLOAT) found_accept_float = true;
+        if (state == LexerState::ACCEPT_STRING) found_accept_string = true;
+        if (state == LexerState::ACCEPT_CHAR) found_accept_char = true;
+        if (state == LexerState::ACCEPT_OPERATOR) found_accept_operator = true;
+        if (state == LexerState::ACCEPT_DELIMITER) found_accept_delimiter = true;
+        if (state == LexerState::ACCEPT_COMMENT) found_accept_comment = true;
+        if (state == LexerState::ACCEPT_EOF) found_accept_eof = true;
+    }
+    
+    assertTrue(found_accept_identifier, "getAcceptingStates contém ACCEPT_IDENTIFIER");
+    assertTrue(found_accept_integer, "getAcceptingStates contém ACCEPT_INTEGER");
+    assertTrue(found_accept_float, "getAcceptingStates contém ACCEPT_FLOAT");
+    assertTrue(found_accept_string, "getAcceptingStates contém ACCEPT_STRING");
+    assertTrue(found_accept_char, "getAcceptingStates contém ACCEPT_CHAR");
+    assertTrue(found_accept_operator, "getAcceptingStates contém ACCEPT_OPERATOR");
+    assertTrue(found_accept_delimiter, "getAcceptingStates contém ACCEPT_DELIMITER");
+    assertTrue(found_accept_comment, "getAcceptingStates contém ACCEPT_COMMENT");
+    assertTrue(found_accept_eof, "getAcceptingStates contém ACCEPT_EOF");
+    
+    printTestResult("Estados de Aceitação (Fase 5.2)", true);
+}
+
+// Teste de estados de erro
+void testErrorStates() {
+    std::cout << "\n=== Testando Estados de Erro (Fase 5.2) ===" << std::endl;
+    
+    StateMachine sm;
+    
+    // Teste estado inicial não é de erro
+    assertTrue(!sm.isErrorState(), "Estado START não é de erro");
+    
+    // Teste estados intermediários não são de erro
+    sm.transition('a'); // IDENTIFIER
+    assertTrue(!sm.isErrorState(), "Estado IDENTIFIER não é de erro");
+    sm.reset();
+    
+    sm.transition('1'); // INTEGER
+    assertTrue(!sm.isErrorState(), "Estado INTEGER não é de erro");
+    sm.reset();
+    
+    sm.transition('+'); // PLUS
+    assertTrue(!sm.isErrorState(), "Estado PLUS não é de erro");
+    sm.reset();
+    
+    // Teste estados de aceitação não são de erro
+    sm.transition('a'); // IDENTIFIER
+    sm.transition(' '); // ACCEPT_IDENTIFIER
+    assertTrue(!sm.isErrorState(), "Estado ACCEPT_IDENTIFIER não é de erro");
+    sm.reset();
+    
+    // Teste transições que levam ao estado de erro
+    assertEqual(LexerState::ERROR, sm.transition('\x01'), "Caractere inválido -> ERROR");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    sm.reset();
+    
+    assertEqual(LexerState::ERROR, sm.transition('\x02'), "Outro caractere inválido -> ERROR");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    sm.reset();
+    
+    assertEqual(LexerState::ERROR, sm.transition('\x7F'), "Caractere de controle -> ERROR");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    sm.reset();
+    
+    // Teste transições inválidas de estados específicos
+    sm.transition('1'); // INTEGER
+    assertEqual(LexerState::ERROR, sm.transition('x'), "INTEGER + 'x' -> ERROR (exceto hex)");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    sm.reset();
+    
+    // Teste string não terminada
+    sm.transition('"'); // STRING_START
+    sm.transition('h'); // STRING_BODY
+    sm.transition('i'); // STRING_BODY
+    assertEqual(LexerState::ERROR, sm.transition('\0'), "String não terminada -> ERROR");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    sm.reset();
+    
+    // Teste caractere não terminado
+    sm.transition('\''); // CHAR_START
+    sm.transition('a'); // CHAR_BODY
+    assertEqual(LexerState::ERROR, sm.transition('\0'), "Char não terminado -> ERROR");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    sm.reset();
+    
+    // Teste comentário de bloco não terminado
+    sm.transition('/'); // DIVIDE
+    sm.transition('*'); // BLOCK_COMMENT
+    sm.transition('t'); // BLOCK_COMMENT
+    sm.transition('e'); // BLOCK_COMMENT
+    sm.transition('s'); // BLOCK_COMMENT
+    sm.transition('t'); // BLOCK_COMMENT
+    assertEqual(LexerState::ERROR, sm.transition('\0'), "Comentário de bloco não terminado -> ERROR");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    sm.reset();
+    
+    // Teste método getErrorStates
+    auto error_states = sm.getErrorStates();
+    assertTrue(error_states.size() >= 1, "getErrorStates retorna pelo menos 1 estado");
+    
+    bool found_error = false;
+    for (const auto& state : error_states) {
+        if (state == LexerState::ERROR) {
+            found_error = true;
+            break;
+        }
+    }
+    assertTrue(found_error, "getErrorStates contém ERROR");
+    
+    // Teste isErrorState com diferentes estados
+    assertTrue(sm.isErrorState(LexerState::ERROR), "isErrorState(ERROR) retorna true");
+    assertTrue(!sm.isErrorState(LexerState::START), "isErrorState(START) retorna false");
+    assertTrue(!sm.isErrorState(LexerState::IDENTIFIER), "isErrorState(IDENTIFIER) retorna false");
+    assertTrue(!sm.isErrorState(LexerState::ACCEPT_IDENTIFIER), "isErrorState(ACCEPT_IDENTIFIER) retorna false");
+    
+    // Teste recuperação de erro (reset)
+    sm.transition('\x01'); // ERROR
+    assertTrue(sm.isErrorState(), "Estado ERROR após caractere inválido");
+    sm.reset();
+    assertTrue(!sm.isErrorState(), "Estado não é de erro após reset");
+    assertEqual(LexerState::START, sm.getCurrentState(), "Estado volta para START após reset");
+    
+    // Teste múltiplos erros consecutivos
+    sm.transition('\x01'); // ERROR
+    assertTrue(sm.isErrorState(), "Primeiro erro");
+    assertEqual(LexerState::ERROR, sm.transition('\x02'), "Segundo erro consecutivo");
+    assertTrue(sm.isErrorState(), "Ainda em estado de erro");
+    sm.reset();
+    
+    // Teste transições válidas após reset
+    sm.transition('a'); // IDENTIFIER
+    assertTrue(!sm.isErrorState(), "Transição válida após reset");
+    assertEqual(LexerState::IDENTIFIER, sm.getCurrentState(), "Estado correto após reset");
+    
+    printTestResult("Estados de Erro (Fase 5.2)", true);
+}
+
+// Teste de reset da máquina de estados
+void testStateMachineReset() {
+    std::cout << "\n=== Testando Reset da Máquina de Estados (Fase 5.2) ===" << std::endl;
+    
+    StateMachine sm;
+    
+    // Teste estado inicial
+    assertEqual(LexerState::START, sm.getCurrentState(), "Estado inicial é START");
+    assertTrue(!sm.isAcceptingState(), "Estado inicial não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado inicial não é de erro");
+    
+    // Teste reset do estado START (não deve mudar)
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de START mantém START");
+    
+    // Teste reset de estado intermediário (IDENTIFIER)
+    sm.transition('a'); // IDENTIFIER
+    assertEqual(LexerState::IDENTIFIER, sm.getCurrentState(), "Estado mudou para IDENTIFIER");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de IDENTIFIER volta para START");
+    
+    // Teste reset de estado de aceitação
+    sm.transition('a'); // IDENTIFIER
+    sm.transition(' '); // ACCEPT_IDENTIFIER
+    assertEqual(LexerState::ACCEPT_IDENTIFIER, sm.getCurrentState(), "Estado mudou para ACCEPT_IDENTIFIER");
+    assertTrue(sm.isAcceptingState(), "Estado é de aceitação");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de ACCEPT_IDENTIFIER volta para START");
+    assertTrue(!sm.isAcceptingState(), "Estado não é mais de aceitação após reset");
+    
+    // Teste reset de estado de erro
+    sm.transition('\x01'); // ERROR
+    assertEqual(LexerState::ERROR, sm.getCurrentState(), "Estado mudou para ERROR");
+    assertTrue(sm.isErrorState(), "Estado é de erro");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de ERROR volta para START");
+    assertTrue(!sm.isErrorState(), "Estado não é mais de erro após reset");
+    
+    // Teste reset após sequência complexa de transições
+    sm.transition('1'); // INTEGER
+    sm.transition('2'); // INTEGER
+    sm.transition('.'); // FLOAT_DOT
+    sm.transition('5'); // FLOAT_DIGITS
+    assertEqual(LexerState::FLOAT_DIGITS, sm.getCurrentState(), "Estado após sequência complexa");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset após sequência complexa volta para START");
+    
+    // Teste reset após operadores compostos
+    sm.transition('+'); // PLUS
+    sm.transition('+'); // INCREMENT
+    assertEqual(LexerState::INCREMENT, sm.getCurrentState(), "Estado mudou para INCREMENT");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de INCREMENT volta para START");
+    
+    // Teste reset após comentários
+    sm.transition('/'); // DIVIDE
+    sm.transition('/'); // LINE_COMMENT
+    sm.transition('t'); // LINE_COMMENT
+    assertEqual(LexerState::LINE_COMMENT, sm.getCurrentState(), "Estado mudou para LINE_COMMENT");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de LINE_COMMENT volta para START");
+    
+    // Teste reset após strings
+    sm.transition('"'); // STRING_START
+    sm.transition('h'); // STRING_BODY
+    sm.transition('i'); // STRING_BODY
+    assertEqual(LexerState::STRING_BODY, sm.getCurrentState(), "Estado mudou para STRING_BODY");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de STRING_BODY volta para START");
+    
+    // Teste reset após caracteres
+    sm.transition('\''); // CHAR_START
+    sm.transition('a'); // CHAR_BODY
+    assertEqual(LexerState::CHAR_BODY, sm.getCurrentState(), "Estado mudou para CHAR_BODY");
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Reset de CHAR_BODY volta para START");
+    
+    // Teste múltiplos resets consecutivos
+    sm.transition('a'); // IDENTIFIER
+    sm.reset();
+    sm.reset();
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Múltiplos resets mantêm START");
+    
+    // Teste funcionalidade após reset
+    sm.transition('a'); // IDENTIFIER
+    sm.reset();
+    sm.transition('1'); // INTEGER
+    assertEqual(LexerState::INTEGER, sm.getCurrentState(), "Funcionalidade normal após reset");
+    sm.transition(' '); // ACCEPT_INTEGER
+    assertTrue(sm.isAcceptingState(), "Estado de aceitação funciona após reset");
+    
+    // Teste reset preserva configurações da máquina
+    auto error_handler = std::make_shared<ErrorHandler>();
+    sm.setErrorHandler(error_handler);
+    sm.transition('a'); // IDENTIFIER
+    sm.reset();
+    assertTrue(sm.getErrorHandler() == error_handler, "Reset preserva error handler");
+    
+    // Teste reset não afeta métodos utilitários
+    sm.transition('a'); // IDENTIFIER
+    sm.reset();
+    auto accepting_states = sm.getAcceptingStates();
+    assertTrue(accepting_states.size() > 0, "getAcceptingStates funciona após reset");
+    
+    auto error_states = sm.getErrorStates();
+    assertTrue(error_states.size() > 0, "getErrorStates funciona após reset");
+    
+    // Teste isValidTransition após reset
+    sm.transition('a'); // IDENTIFIER
+    sm.reset();
+    assertTrue(sm.isValidTransition('a'), "isValidTransition funciona após reset");
+    assertTrue(sm.isValidTransition('1'), "isValidTransition funciona após reset");
+    assertTrue(!sm.isValidTransition('\x01'), "isValidTransition detecta inválidas após reset");
+    
+    printTestResult("Reset da Máquina de Estados (Fase 5.2)", true);
+}
+
+// Teste da tabela de transições
+void testTransitionTable() {
+    std::cout << "\n=== Testando Tabela de Transições (Fase 5.2) ===" << std::endl;
+    
+    StateMachine sm;
+    
+    // Teste transições básicas do estado START
+    assertTrue(sm.isValidTransition('a'), "Transição START -> 'a' é válida");
+    assertTrue(sm.isValidTransition('z'), "Transição START -> 'z' é válida");
+    assertTrue(sm.isValidTransition('A'), "Transição START -> 'A' é válida");
+    assertTrue(sm.isValidTransition('Z'), "Transição START -> 'Z' é válida");
+    assertTrue(sm.isValidTransition('_'), "Transição START -> '_' é válida");
+    assertTrue(sm.isValidTransition('0'), "Transição START -> '0' é válida");
+    assertTrue(sm.isValidTransition('9'), "Transição START -> '9' é válida");
+    assertTrue(sm.isValidTransition('+'), "Transição START -> '+' é válida");
+    assertTrue(sm.isValidTransition('-'), "Transição START -> '-' é válida");
+    assertTrue(sm.isValidTransition('*'), "Transição START -> '*' é válida");
+    assertTrue(sm.isValidTransition('/'), "Transição START -> '/' é válida");
+    assertTrue(sm.isValidTransition('='), "Transição START -> '=' é válida");
+    assertTrue(sm.isValidTransition('<'), "Transição START -> '<' é válida");
+    assertTrue(sm.isValidTransition('>'), "Transição START -> '>' é válida");
+    assertTrue(sm.isValidTransition('!'), "Transição START -> '!' é válida");
+    assertTrue(sm.isValidTransition('&'), "Transição START -> '&' é válida");
+    assertTrue(sm.isValidTransition('|'), "Transição START -> '|' é válida");
+    assertTrue(sm.isValidTransition('('), "Transição START -> '(' é válida");
+    assertTrue(sm.isValidTransition(')'), "Transição START -> ')' é válida");
+    assertTrue(sm.isValidTransition('{'), "Transição START -> '{' é válida");
+    assertTrue(sm.isValidTransition('}'), "Transição START -> '}' é válida");
+    assertTrue(sm.isValidTransition('['), "Transição START -> '[' é válida");
+    assertTrue(sm.isValidTransition(']'), "Transição START -> ']' é válida");
+    assertTrue(sm.isValidTransition(';'), "Transição START -> ';' é válida");
+    assertTrue(sm.isValidTransition(','), "Transição START -> ',' é válida");
+    assertTrue(sm.isValidTransition('.'), "Transição START -> '.' é válida");
+    assertTrue(sm.isValidTransition('"'), "Transição START -> '\"' é válida");
+    assertTrue(sm.isValidTransition('\''), "Transição START -> '\'' é válida");
+    assertTrue(sm.isValidTransition(' '), "Transição START -> ' ' é válida");
+    assertTrue(sm.isValidTransition('\t'), "Transição START -> '\t' é válida");
+    assertTrue(sm.isValidTransition('\n'), "Transição START -> '\n' é válida");
+    assertTrue(sm.isValidTransition('\r'), "Transição START -> '\r' é válida");
+    
+    // Teste transições inválidas do estado START
+    assertTrue(!sm.isValidTransition('\x01'), "Transição START -> '\x01' é inválida");
+    assertTrue(!sm.isValidTransition('\x02'), "Transição START -> '\x02' é inválida");
+    assertTrue(!sm.isValidTransition('\x7F'), "Transição START -> '\x7F' é inválida");
+    
+    // Teste transições do estado IDENTIFIER
+    sm.transition('a'); // IDENTIFIER
+    assertEqual(LexerState::IDENTIFIER, sm.getCurrentState(), "Estado mudou para IDENTIFIER");
+    assertTrue(sm.isValidTransition('a'), "Transição IDENTIFIER -> 'a' é válida");
+    assertTrue(sm.isValidTransition('z'), "Transição IDENTIFIER -> 'z' é válida");
+    assertTrue(sm.isValidTransition('A'), "Transição IDENTIFIER -> 'A' é válida");
+    assertTrue(sm.isValidTransition('Z'), "Transição IDENTIFIER -> 'Z' é válida");
+    assertTrue(sm.isValidTransition('_'), "Transição IDENTIFIER -> '_' é válida");
+    assertTrue(sm.isValidTransition('0'), "Transição IDENTIFIER -> '0' é válida");
+    assertTrue(sm.isValidTransition('9'), "Transição IDENTIFIER -> '9' é válida");
+    assertTrue(sm.isValidTransition(' '), "Transição IDENTIFIER -> ' ' é válida (aceitação)");
+    assertTrue(!sm.isValidTransition('+'), "Transição IDENTIFIER -> '+' é inválida");
+    assertTrue(!sm.isValidTransition('"'), "Transição IDENTIFIER -> '\"' é inválida");
+    
+    // Teste transições do estado INTEGER
+    sm.reset();
+    sm.transition('1'); // INTEGER
+    assertEqual(LexerState::INTEGER, sm.getCurrentState(), "Estado mudou para INTEGER");
+    assertTrue(sm.isValidTransition('0'), "Transição INTEGER -> '0' é válida");
+    assertTrue(sm.isValidTransition('9'), "Transição INTEGER -> '9' é válida");
+    assertTrue(sm.isValidTransition('.'), "Transição INTEGER -> '.' é válida (float)");
+    assertTrue(sm.isValidTransition(' '), "Transição INTEGER -> ' ' é válida (aceitação)");
+    assertTrue(!sm.isValidTransition('a'), "Transição INTEGER -> 'a' é inválida");
+    assertTrue(!sm.isValidTransition('+'), "Transição INTEGER -> '+' é inválida");
+    
+    // Teste transições do estado FLOAT_DOT
+    sm.transition('.'); // FLOAT_DOT
+    assertEqual(LexerState::FLOAT_DOT, sm.getCurrentState(), "Estado mudou para FLOAT_DOT");
+    assertTrue(sm.isValidTransition('0'), "Transição FLOAT_DOT -> '0' é válida");
+    assertTrue(sm.isValidTransition('9'), "Transição FLOAT_DOT -> '9' é válida");
+    assertTrue(!sm.isValidTransition('.'), "Transição FLOAT_DOT -> '.' é inválida");
+    assertTrue(!sm.isValidTransition('a'), "Transição FLOAT_DOT -> 'a' é inválida");
+    assertTrue(!sm.isValidTransition(' '), "Transição FLOAT_DOT -> ' ' é inválida (não aceitação)");
+    
+    // Teste transições do estado FLOAT_DIGITS
+    sm.transition('5'); // FLOAT_DIGITS
+    assertEqual(LexerState::FLOAT_DIGITS, sm.getCurrentState(), "Estado mudou para FLOAT_DIGITS");
+    assertTrue(sm.isValidTransition('0'), "Transição FLOAT_DIGITS -> '0' é válida");
+    assertTrue(sm.isValidTransition('9'), "Transição FLOAT_DIGITS -> '9' é válida");
+    assertTrue(sm.isValidTransition(' '), "Transição FLOAT_DIGITS -> ' ' é válida (aceitação)");
+    assertTrue(!sm.isValidTransition('.'), "Transição FLOAT_DIGITS -> '.' é inválida");
+    assertTrue(!sm.isValidTransition('a'), "Transição FLOAT_DIGITS -> 'a' é inválida");
+    
+    // Teste transições de operadores compostos
+    sm.reset();
+    sm.transition('+'); // PLUS
+    assertEqual(LexerState::PLUS, sm.getCurrentState(), "Estado mudou para PLUS");
+    assertTrue(sm.isValidTransition('+'), "Transição PLUS -> '+' é válida (increment)");
+    assertTrue(sm.isValidTransition('='), "Transição PLUS -> '=' é válida (plus_assign)");
+    assertTrue(sm.isValidTransition(' '), "Transição PLUS -> ' ' é válida (aceitação)");
+    assertTrue(!sm.isValidTransition('a'), "Transição PLUS -> 'a' é inválida");
+    
+    sm.transition('+'); // INCREMENT
+    assertEqual(LexerState::INCREMENT, sm.getCurrentState(), "Estado mudou para INCREMENT");
+    assertTrue(sm.isValidTransition(' '), "Transição INCREMENT -> ' ' é válida (aceitação)");
+    assertTrue(!sm.isValidTransition('+'), "Transição INCREMENT -> '+' é inválida");
+    
+    // Teste transições de comentários
+    sm.reset();
+    sm.transition('/'); // DIVIDE
+    assertEqual(LexerState::DIVIDE, sm.getCurrentState(), "Estado mudou para DIVIDE");
+    assertTrue(sm.isValidTransition('/'), "Transição DIVIDE -> '/' é válida (line comment)");
+    assertTrue(sm.isValidTransition('*'), "Transição DIVIDE -> '*' é válida (block comment)");
+    assertTrue(sm.isValidTransition('='), "Transição DIVIDE -> '=' é válida (divide_assign)");
+    assertTrue(sm.isValidTransition(' '), "Transição DIVIDE -> ' ' é válida (aceitação)");
+    
+    sm.transition('/'); // LINE_COMMENT
+    assertEqual(LexerState::LINE_COMMENT, sm.getCurrentState(), "Estado mudou para LINE_COMMENT");
+    assertTrue(sm.isValidTransition('a'), "Transição LINE_COMMENT -> 'a' é válida");
+    assertTrue(sm.isValidTransition(' '), "Transição LINE_COMMENT -> ' ' é válida");
+    assertTrue(sm.isValidTransition('\n'), "Transição LINE_COMMENT -> '\n' é válida (fim)");
+    
+    // Teste transições de strings
+    sm.reset();
+    sm.transition('"'); // STRING_START
+    assertEqual(LexerState::STRING_START, sm.getCurrentState(), "Estado mudou para STRING_START");
+    assertTrue(sm.isValidTransition('a'), "Transição STRING_START -> 'a' é válida");
+    assertTrue(sm.isValidTransition(' '), "Transição STRING_START -> ' ' é válida");
+    assertTrue(sm.isValidTransition('\\'), "Transição STRING_START -> '\\' é válida (escape)");
+    assertTrue(sm.isValidTransition('"'), "Transição STRING_START -> '\"' é válida (fim)");
+    assertTrue(!sm.isValidTransition('\n'), "Transição STRING_START -> '\n' é inválida");
+    
+    // Teste transições de caracteres
+    sm.reset();
+    sm.transition('\''); // CHAR_START
+    assertEqual(LexerState::CHAR_START, sm.getCurrentState(), "Estado mudou para CHAR_START");
+    assertTrue(sm.isValidTransition('a'), "Transição CHAR_START -> 'a' é válida");
+    assertTrue(sm.isValidTransition('\\'), "Transição CHAR_START -> '\\' é válida (escape)");
+    assertTrue(!sm.isValidTransition('\''), "Transição CHAR_START -> '\'' é inválida (vazio)");
+    assertTrue(!sm.isValidTransition('\n'), "Transição CHAR_START -> '\n' é inválida");
+    
+    // Teste transições de delimitadores
+    sm.reset();
+    sm.transition('('); // LEFT_PAREN
+    assertEqual(LexerState::LEFT_PAREN, sm.getCurrentState(), "Estado mudou para LEFT_PAREN");
+    assertTrue(sm.isValidTransition(' '), "Transição LEFT_PAREN -> ' ' é válida (aceitação)");
+    assertTrue(!sm.isValidTransition('('), "Transição LEFT_PAREN -> '(' é inválida");
+    
+    // Teste transições de whitespace
+    sm.reset();
+    sm.transition(' '); // WHITESPACE
+    assertEqual(LexerState::WHITESPACE, sm.getCurrentState(), "Estado mudou para WHITESPACE");
+    assertTrue(sm.isValidTransition(' '), "Transição WHITESPACE -> ' ' é válida");
+    assertTrue(sm.isValidTransition('\t'), "Transição WHITESPACE -> '\t' é válida");
+    assertTrue(sm.isValidTransition('\n'), "Transição WHITESPACE -> '\n' é válida");
+    assertTrue(sm.isValidTransition('\r'), "Transição WHITESPACE -> '\r' é válida");
+    assertTrue(!sm.isValidTransition('a'), "Transição WHITESPACE -> 'a' é inválida");
+    
+    // Teste transições do estado ERROR
+    sm.reset();
+    sm.transition('\x01'); // ERROR
+    assertEqual(LexerState::ERROR, sm.getCurrentState(), "Estado mudou para ERROR");
+    assertTrue(!sm.isValidTransition('a'), "Transição ERROR -> 'a' é inválida");
+    assertTrue(!sm.isValidTransition(' '), "Transição ERROR -> ' ' é inválida");
+    assertTrue(!sm.isValidTransition('\x01'), "Transição ERROR -> '\x01' é inválida");
+    
+    // Teste consistência das transições através de verificação direta
+     sm.reset();
+     
+     // Verificar que transições válidas levam a estados esperados
+     sm.transition('a');
+     assertEqual(LexerState::IDENTIFIER, sm.getCurrentState(), "'a' leva a IDENTIFIER");
+     
+     sm.reset();
+     sm.transition('1');
+     assertEqual(LexerState::INTEGER, sm.getCurrentState(), "'1' leva a INTEGER");
+     
+     sm.reset();
+     sm.transition('+');
+     assertEqual(LexerState::PLUS, sm.getCurrentState(), "'+' leva a PLUS");
+     
+     sm.reset();
+     sm.transition('/');
+     assertEqual(LexerState::DIVIDE, sm.getCurrentState(), "'/' leva a DIVIDE");
+     
+     sm.reset();
+     sm.transition('"');
+     assertEqual(LexerState::STRING_START, sm.getCurrentState(), "'\"' leva a STRING_START");
+     
+     sm.reset();
+     sm.transition('\'');
+     assertEqual(LexerState::CHAR_START, sm.getCurrentState(), "'\'' leva a CHAR_START");
+     
+     sm.reset();
+     sm.transition('(');
+     assertEqual(LexerState::LEFT_PAREN, sm.getCurrentState(), "'(' leva a LEFT_PAREN");
+     
+     sm.reset();
+     sm.transition(' ');
+     assertEqual(LexerState::WHITESPACE, sm.getCurrentState(), "' ' leva a WHITESPACE");
+     
+     // Verificar transições inválidas levam a ERROR
+     sm.reset();
+     sm.transition('\x01');
+     assertEqual(LexerState::ERROR, sm.getCurrentState(), "Caractere inválido leva a ERROR");
+    
+    printTestResult("Tabela de Transições (Fase 5.2)", true);
+}
+
+// Teste de validação de estados
+void testStateValidation() {
+    std::cout << "\n=== Testando Validação de Estados (Fase 5.2) ===" << std::endl;
+    
+    StateMachine sm;
+    
+    // Teste validação do estado inicial
+    assertEqual(LexerState::START, sm.getCurrentState(), "Estado atual é START");
+    assertTrue(!sm.isAcceptingState(), "Estado START não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado START não é de erro");
+    
+    // Teste validação de estados de identificadores
+    sm.transition('a'); // IDENTIFIER
+    assertEqual(LexerState::IDENTIFIER, sm.getCurrentState(), "Estado mudou para IDENTIFIER");
+    assertTrue(!sm.isAcceptingState(), "Estado IDENTIFIER não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado IDENTIFIER não é de erro");
+    
+    sm.transition(' '); // ACCEPT_IDENTIFIER
+    assertEqual(LexerState::ACCEPT_IDENTIFIER, sm.getCurrentState(), "Estado mudou para ACCEPT_IDENTIFIER");
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_IDENTIFIER é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado ACCEPT_IDENTIFIER não é de erro");
+    
+    // Teste validação de estados de números
+    sm.reset();
+    sm.transition('1'); // INTEGER
+    assertEqual(LexerState::INTEGER, sm.getCurrentState(), "Estado mudou para INTEGER");
+    assertTrue(!sm.isAcceptingState(), "Estado INTEGER não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado INTEGER não é de erro");
+    
+    sm.transition('.'); // FLOAT_DOT
+    assertEqual(LexerState::FLOAT_DOT, sm.getCurrentState(), "Estado mudou para FLOAT_DOT");
+    assertTrue(!sm.isAcceptingState(), "Estado FLOAT_DOT não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado FLOAT_DOT não é de erro");
+    
+    sm.transition('5'); // FLOAT_DIGITS
+    assertEqual(LexerState::FLOAT_DIGITS, sm.getCurrentState(), "Estado mudou para FLOAT_DIGITS");
+    assertTrue(!sm.isAcceptingState(), "Estado FLOAT_DIGITS não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado FLOAT_DIGITS não é de erro");
+    
+    sm.transition(' '); // ACCEPT_FLOAT
+    assertEqual(LexerState::ACCEPT_FLOAT, sm.getCurrentState(), "Estado mudou para ACCEPT_FLOAT");
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_FLOAT é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado ACCEPT_FLOAT não é de erro");
+    
+    // Teste validação de estados de operadores
+    sm.reset();
+    sm.transition('+'); // PLUS
+    assertEqual(LexerState::PLUS, sm.getCurrentState(), "Estado mudou para PLUS");
+    assertTrue(!sm.isAcceptingState(), "Estado PLUS não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado PLUS não é de erro");
+    
+    sm.transition('+'); // INCREMENT
+    assertEqual(LexerState::INCREMENT, sm.getCurrentState(), "Estado mudou para INCREMENT");
+    assertTrue(!sm.isAcceptingState(), "Estado INCREMENT não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado INCREMENT não é de erro");
+    
+    sm.transition(' '); // ACCEPT_OPERATOR
+    assertEqual(LexerState::ACCEPT_OPERATOR, sm.getCurrentState(), "Estado mudou para ACCEPT_OPERATOR");
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_OPERATOR é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado ACCEPT_OPERATOR não é de erro");
+    
+    // Teste validação de estados de comentários
+    sm.reset();
+    sm.transition('/'); // DIVIDE
+    sm.transition('/'); // LINE_COMMENT
+    assertEqual(LexerState::LINE_COMMENT, sm.getCurrentState(), "Estado mudou para LINE_COMMENT");
+    assertTrue(!sm.isAcceptingState(), "Estado LINE_COMMENT não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado LINE_COMMENT não é de erro");
+    
+    // Teste validação de estados de strings
+    sm.reset();
+    sm.transition('"'); // STRING_START
+    assertEqual(LexerState::STRING_START, sm.getCurrentState(), "Estado mudou para STRING_START");
+    assertTrue(!sm.isAcceptingState(), "Estado STRING_START não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado STRING_START não é de erro");
+    
+    sm.transition('h'); // STRING_BODY
+    assertEqual(LexerState::STRING_BODY, sm.getCurrentState(), "Estado mudou para STRING_BODY");
+    assertTrue(!sm.isAcceptingState(), "Estado STRING_BODY não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado STRING_BODY não é de erro");
+    
+    sm.transition('"'); // STRING_END
+    assertEqual(LexerState::STRING_END, sm.getCurrentState(), "Estado mudou para STRING_END");
+    assertTrue(sm.isAcceptingState(), "Estado STRING_END é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado STRING_END não é de erro");
+    
+    sm.transition(' '); // ACCEPT_STRING
+    assertEqual(LexerState::ACCEPT_STRING, sm.getCurrentState(), "Estado mudou para ACCEPT_STRING");
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_STRING é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado ACCEPT_STRING não é de erro");
+    
+    // Teste validação de estados de caracteres
+    sm.reset();
+    sm.transition('\''); // CHAR_START
+    assertEqual(LexerState::CHAR_START, sm.getCurrentState(), "Estado mudou para CHAR_START");
+    assertTrue(!sm.isAcceptingState(), "Estado CHAR_START não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado CHAR_START não é de erro");
+    
+    sm.transition('a'); // CHAR_BODY
+    assertEqual(LexerState::CHAR_BODY, sm.getCurrentState(), "Estado mudou para CHAR_BODY");
+    assertTrue(!sm.isAcceptingState(), "Estado CHAR_BODY não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado CHAR_BODY não é de erro");
+    
+    sm.transition('\''); // CHAR_END
+    assertEqual(LexerState::CHAR_END, sm.getCurrentState(), "Estado mudou para CHAR_END");
+    assertTrue(sm.isAcceptingState(), "Estado CHAR_END é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado CHAR_END não é de erro");
+    
+    sm.transition(' '); // ACCEPT_CHAR
+    assertEqual(LexerState::ACCEPT_CHAR, sm.getCurrentState(), "Estado mudou para ACCEPT_CHAR");
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_CHAR é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado ACCEPT_CHAR não é de erro");
+    
+    // Teste validação de estados de delimitadores
+    sm.reset();
+    sm.transition('('); // LEFT_PAREN
+    assertEqual(LexerState::LEFT_PAREN, sm.getCurrentState(), "Estado mudou para LEFT_PAREN");
+    assertTrue(!sm.isAcceptingState(), "Estado LEFT_PAREN não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado LEFT_PAREN não é de erro");
+    
+    sm.transition(' '); // ACCEPT_DELIMITER
+    assertEqual(LexerState::ACCEPT_DELIMITER, sm.getCurrentState(), "Estado mudou para ACCEPT_DELIMITER");
+    assertTrue(sm.isAcceptingState(), "Estado ACCEPT_DELIMITER é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado ACCEPT_DELIMITER não é de erro");
+    
+    // Teste validação de estados de whitespace
+    sm.reset();
+    sm.transition(' '); // WHITESPACE
+    assertEqual(LexerState::WHITESPACE, sm.getCurrentState(), "Estado mudou para WHITESPACE");
+    assertTrue(!sm.isAcceptingState(), "Estado WHITESPACE não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado WHITESPACE não é de erro");
+    
+    // Teste validação do estado de erro
+    sm.reset();
+    sm.transition('\x01'); // ERROR
+    assertEqual(LexerState::ERROR, sm.getCurrentState(), "Estado mudou para ERROR");
+    assertTrue(!sm.isAcceptingState(), "Estado ERROR não é de aceitação");
+    assertTrue(sm.isErrorState(), "Estado ERROR é de erro");
+    
+    // Teste validação após reset
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Estado após reset é START");
+    assertTrue(!sm.isAcceptingState(), "Estado após reset não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado após reset não é de erro");
+    
+    // Teste consistência de estados de aceitação e erro
+    sm.reset();
+    sm.transition('a'); // IDENTIFIER
+    sm.transition(' '); // ACCEPT_IDENTIFIER
+    assertTrue(sm.isAcceptingState(), "Estado de aceitação é consistente");
+    assertTrue(!sm.isErrorState(), "Estado de aceitação não é de erro");
+    
+    sm.reset();
+    sm.transition('\x01'); // ERROR
+    assertTrue(!sm.isAcceptingState(), "Estado de erro não é de aceitação");
+    assertTrue(sm.isErrorState(), "Estado de erro é consistente");
+    
+    sm.reset();
+    assertEqual(LexerState::START, sm.getCurrentState(), "Estado após reset é START");
+    
+    // Teste validação de estados de aceitação
+    auto accepting_states = sm.getAcceptingStates();
+    assertTrue(accepting_states.size() > 0, "Deve haver estados de aceitação");
+    
+    // Teste validação de estados de erro
+    auto error_states = sm.getErrorStates();
+    assertTrue(error_states.size() > 0, "Deve haver estados de erro");
+    
+    // Teste consistência: todos os estados alcançáveis devem ser válidos
+    sm.reset();
+    
+    // Testar sequências de transições válidas
+    std::vector<std::string> test_sequences = {
+        "abc",      // identificador
+        "123",      // inteiro
+        "12.34",    // float
+        "++",       // increment
+        "==",       // equal
+        "//test",   // comentário de linha
+        "\"hello\"", // string
+        "'a'",      // char
+        "(){}[]",   // delimitadores
+        "   "        // whitespace
+    };
+    
+    for (const auto& sequence : test_sequences) {
+        sm.reset();
+        for (char c : sequence) {
+            if (sm.isValidTransition(c)) {
+                LexerState prev_state = sm.getCurrentState();
+                sm.transition(c);
+                LexerState current_state = sm.getCurrentState();
+                // Verifica se a transição foi bem-sucedida (não foi para ERROR)
+                assertTrue(current_state != LexerState::ERROR || prev_state == LexerState::ERROR, 
+                          "Transição válida não deve levar a erro: " + std::string(1, c));
+            }
+        }
+    }
+    
+    // Teste validação de transições entre estados
+    sm.reset();
+    // Teste adicional de validação com transições válidas
+    sm.reset();
+    sm.transition('a'); // IDENTIFIER
+    assertEqual(LexerState::IDENTIFIER, sm.getCurrentState(), "Estado mudou para IDENTIFIER");
+    assertTrue(!sm.isAcceptingState(), "Estado IDENTIFIER não é de aceitação");
+    assertTrue(!sm.isErrorState(), "Estado IDENTIFIER não é de erro");
+    
+    if (sm.isValidTransition('b')) {
+        sm.transition('b'); // Continua IDENTIFIER
+        assertEqual(LexerState::IDENTIFIER, sm.getCurrentState(), "Estado continua IDENTIFIER após 'b'");
+        assertTrue(!sm.isAcceptingState(), "Estado IDENTIFIER não é de aceitação");
+        assertTrue(!sm.isErrorState(), "Estado IDENTIFIER não é de erro");
+    }
+    
+    if (sm.isValidTransition(' ')) {
+        sm.transition(' '); // ACCEPT_IDENTIFIER
+        assertEqual(LexerState::ACCEPT_IDENTIFIER, sm.getCurrentState(), "Estado mudou para ACCEPT_IDENTIFIER");
+        assertTrue(sm.isAcceptingState(), "Estado é de aceitação");
+        assertTrue(!sm.isErrorState(), "Estado de aceitação não é de erro");
+    }
+    
+    // Teste validação após múltiplas transições
+    sm.reset();
+    sm.transition('1'); // INTEGER
+    assertEqual(LexerState::INTEGER, sm.getCurrentState(), "Estado mudou para INTEGER após '1'");
+    sm.transition('2'); // INTEGER
+    assertEqual(LexerState::INTEGER, sm.getCurrentState(), "Estado continua INTEGER após '2'");
+    sm.transition('.'); // FLOAT_DOT
+    assertEqual(LexerState::FLOAT_DOT, sm.getCurrentState(), "Estado mudou para FLOAT_DOT após '.'");
+    sm.transition('3'); // FLOAT_DIGITS
+    assertEqual(LexerState::FLOAT_DIGITS, sm.getCurrentState(), "Estado mudou para FLOAT_DIGITS após '3'");
+    sm.transition('4'); // FLOAT_DIGITS
+    assertEqual(LexerState::FLOAT_DIGITS, sm.getCurrentState(), "Estado continua FLOAT_DIGITS após '4'");
+    
+    printTestResult("Validação de Estados (Fase 5.2)", true);
+}
+
+// ============================================================================
 // Função principal de testes
 // ============================================================================
 
@@ -649,6 +1560,17 @@ int main() {
         testOperatorTransitions();
         testCommentTransitions();
         testDelimiterTransitions();
+        testStateVerificationMethods();
+        testUtilityAndDebugMethods();
+        testCompleteScenario();
+        
+        // Testes da Fase 5.2
+        testStateTransitions();
+        testAcceptingStates();
+        testErrorStates();
+        testStateMachineReset();
+        testTransitionTable();
+        testStateValidation();
         testStateVerificationMethods();
         testUtilityAndDebugMethods();
         testCompleteScenario();

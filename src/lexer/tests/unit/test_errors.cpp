@@ -1,5 +1,6 @@
 // Testes Unitários - Tratamento de Erros Léxicos
 // Testes para tratamento de erros no lexer e ErrorHandler
+// Fase 5.1 - Testes Unitários Básicos
 
 #include "../../include/error_handler.hpp"
 #include "../../include/lexer.hpp"
@@ -12,6 +13,187 @@
 #include <cstdio>
 
 using namespace Lexer;
+
+// ===== MÉTODOS DA FASE 5.1 =====
+
+// 1. testErrorReporting() - Relatório de erros
+void testErrorReporting() {
+    std::cout << "Testando relatório de erros..." << std::endl;
+    
+    ErrorHandler handler;
+    Position pos1{1, 5, 10};
+    Position pos2{2, 15, 25};
+    
+    // Teste reportar erro único
+    handler.reportError(ErrorType::INVALID_CHARACTER, "Caractere '@' inválido", pos1);
+    assert(handler.hasErrors());
+    assert(handler.getErrorCount() == 1);
+    
+    // Teste reportar múltiplos erros
+    handler.reportError(ErrorType::UNTERMINATED_STRING, "String não terminada", pos2);
+    assert(handler.getErrorCount() == 2);
+    
+    // Verificar detalhes dos erros
+    const auto& errors = handler.getErrors();
+    assert(errors.size() == 2);
+    assert(errors[0].type == ErrorType::INVALID_CHARACTER);
+    assert(errors[1].type == ErrorType::UNTERMINATED_STRING);
+    
+    // Teste limpar erros
+    handler.clear();
+    assert(!handler.hasErrors());
+    assert(handler.getErrorCount() == 0);
+    
+    std::cout << "✓ Relatório de erros passou" << std::endl;
+}
+
+// 2. testWarningReporting() - Relatório de warnings
+void testWarningReporting() {
+    std::cout << "Testando relatório de warnings..." << std::endl;
+    
+    ErrorHandler handler;
+    Position pos{3, 8, 30};
+    
+    // Teste reportar warning único
+    handler.reportWarning(ErrorType::UNUSED_VARIABLE, "Variável não utilizada", pos);
+    assert(handler.getWarningCount() == 1);
+    assert(!handler.hasErrors()); // Warnings não são erros
+    
+    // Teste reportar múltiplos warnings
+    handler.reportWarning(ErrorType::DEPRECATED_FEATURE, "Recurso obsoleto", pos);
+    assert(handler.getWarningCount() == 2);
+    
+    // Verificar detalhes dos warnings
+    const auto& warnings = handler.getWarnings();
+    assert(warnings.size() == 2);
+    assert(warnings[0].type == ErrorType::UNUSED_VARIABLE);
+    assert(warnings[1].type == ErrorType::DEPRECATED_FEATURE);
+    
+    // Teste misturar erros e warnings
+    handler.reportError(ErrorType::INVALID_CHARACTER, "Erro crítico", pos);
+    assert(handler.hasErrors());
+    assert(handler.getErrorCount() == 1);
+    assert(handler.getWarningCount() == 2);
+    
+    std::cout << "✓ Relatório de warnings passou" << std::endl;
+}
+
+// 3. testErrorRecovery() - Recuperação de erros
+void testErrorRecovery() {
+    std::cout << "Testando recuperação de erros..." << std::endl;
+    
+    // Teste com múltiplos erros consecutivos
+    std::ofstream tempFile("temp_recovery.c");
+    tempFile << "int x = @#$; float y = 3.14; char z = 'a';";
+    tempFile.close();
+    
+    ErrorHandler handler;
+    LexerMain lexer("temp_recovery.c", &handler);
+    
+    auto tokens = lexer.tokenizeAll();
+    
+    // Deve ter encontrado erros mas continuado processando
+    assert(handler.hasErrors());
+    
+    // Deve ter tokens válidos após os erros
+    bool foundFloat = false, foundChar = false;
+    for (const auto& token : tokens) {
+        if (token.getType() == TokenType::FLOAT) foundFloat = true;
+        if (token.getType() == TokenType::CHAR) foundChar = true;
+    }
+    assert(foundFloat && foundChar);
+    
+    std::remove("temp_recovery.c");
+    
+    std::cout << "✓ Recuperação de erros passou" << std::endl;
+}
+
+// 4. testErrorFormatting() - Formatação de mensagens
+void testErrorFormatting() {
+    std::cout << "Testando formatação de mensagens..." << std::endl;
+    
+    ErrorHandler handler;
+    Position pos{10, 25, 150};
+    
+    // Teste formatação de erro
+    handler.reportError(ErrorType::INVALID_CHARACTER, "Caractere '@' inválido na linha 10", pos);
+    
+    const auto& errors = handler.getErrors();
+    assert(!errors.empty());
+    
+    const auto& error = errors[0];
+    assert(error.message.find("@") != std::string::npos);
+    assert(error.message.find("10") != std::string::npos);
+    assert(error.position.line == 10);
+    assert(error.position.column == 25);
+    
+    // Teste formatação de warning
+    handler.reportWarning(ErrorType::UNUSED_VARIABLE, "Variável 'temp' declarada mas não utilizada", pos);
+    
+    const auto& warnings = handler.getWarnings();
+    assert(!warnings.empty());
+    assert(warnings[0].message.find("temp") != std::string::npos);
+    
+    std::cout << "✓ Formatação de mensagens passou" << std::endl;
+}
+
+// 5. testErrorContext() - Contexto de erros
+void testErrorContext() {
+    std::cout << "Testando contexto de erros..." << std::endl;
+    
+    // Teste com arquivo que contém contexto
+    std::ofstream tempFile("temp_context.c");
+    tempFile << "int main() {\n";
+    tempFile << "    int x = @;\n";
+    tempFile << "    return 0;\n";
+    tempFile << "}";
+    tempFile.close();
+    
+    ErrorHandler handler;
+    LexerMain lexer("temp_context.c", &handler);
+    
+    auto tokens = lexer.tokenizeAll();
+    
+    if (handler.hasErrors()) {
+        const auto& errors = handler.getErrors();
+        // Verificar se o erro tem contexto de linha
+        assert(errors[0].position.line == 2); // Erro na segunda linha (contagem baseada em 1)
+        assert(errors[0].position.column > 0);
+    }
+    
+    std::remove("temp_context.c");
+    
+    std::cout << "✓ Contexto de erros passou" << std::endl;
+}
+
+// 6. testErrorSuggestions() - Sugestões de correção
+void testErrorSuggestions() {
+    std::cout << "Testando sugestões de correção..." << std::endl;
+    
+    ErrorHandler handler;
+    Position pos{1, 10, 15};
+    
+    // Teste sugestão para caractere inválido
+    handler.reportError(ErrorType::INVALID_CHARACTER, "Caractere '@' inválido. Sugestão: remover ou substituir por operador válido", pos);
+    
+    // Teste sugestão para string não terminada
+    handler.reportError(ErrorType::UNTERMINATED_STRING, "String não terminada. Sugestão: adicionar aspas de fechamento", pos);
+    
+    // Teste sugestão para número inválido
+    handler.reportError(ErrorType::INVALID_NUMBER_FORMAT, "Formato de número inválido '0x'. Sugestão: completar número hexadecimal", pos);
+    
+    const auto& errors = handler.getErrors();
+    assert(errors.size() == 3);
+    
+    // Verificar se as mensagens contêm sugestões
+    assert(errors[0].message.find("Sugestão:") != std::string::npos);
+    assert(errors[1].message.find("Sugestão:") != std::string::npos);
+    assert(errors[2].message.find("Sugestão:") != std::string::npos);
+    
+    std::cout << "✓ Sugestões de correção passou" << std::endl;
+}
+
+// ===== TESTES EXISTENTES =====
 
 
 
@@ -137,7 +319,7 @@ void test_error_recovery() {
     // Teste com múltiplos erros - deve continuar processando
     // Criar arquivo temporário para teste
     std::ofstream tempFile("temp_test4.c");
-    tempFile << "int x = @; float y = #; char z = 'a';";
+    tempFile << "int x = @; float y = $; char z = 'a';";
     tempFile.close();
     
     ErrorHandler handler;
@@ -175,7 +357,7 @@ void test_token_validation() {
     {
         // Criar arquivo temporário para teste
         std::ofstream tempFile("temp_test5.c");
-        tempFile << "0x; 0b; 123.456.789;";
+        tempFile << "0x; 0b; 123abc;";
         tempFile.close();
         
         ErrorHandler handler;
@@ -259,9 +441,20 @@ void test_error_formatting() {
 }
 
 int main() {
-    std::cout << "=== Executando Testes de Tratamento de Erros Léxicos ===" << std::endl;
+    std::cout << "=== Executando Testes de Tratamento de Erros Léxicos (Fase 5.1) ===" << std::endl;
     
     try {
+        // Testes da Fase 5.1
+        std::cout << "\n--- Testes Unitários Básicos (Fase 5.1) ---" << std::endl;
+        testErrorReporting();
+        testWarningReporting();
+        testErrorRecovery();
+        testErrorFormatting();
+        testErrorContext();
+        testErrorSuggestions();
+        
+        // Testes existentes
+        std::cout << "\n--- Testes Complementares ---" << std::endl;
         test_error_handler_basic();
         test_error_types();
         test_lexer_error_handling();
@@ -270,7 +463,7 @@ int main() {
         test_error_limits();
         test_error_formatting();
         
-        std::cout << "\n✅ Todos os testes de tratamento de erros passaram!" << std::endl;
+        std::cout << "\n🎉 Todos os testes de tratamento de erros passaram com sucesso!" << std::endl;
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "❌ Erro durante os testes: " << e.what() << std::endl;

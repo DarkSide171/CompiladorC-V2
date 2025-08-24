@@ -33,16 +33,21 @@ create_lexer_test(test_lexer_logger unit/test_lexer_logger.cpp)
 create_lexer_test(test_states unit/test_states.cpp)
 create_lexer_test(test_lexer unit/test_lexer.cpp)
 create_lexer_test(test_lexer_phase42 unit/test_lexer_phase42.cpp)
+create_lexer_test(test_lexer_phase53 unit/test_lexer_phase53.cpp)
 create_lexer_test(test_advanced_literals unit/test_advanced_literals.cpp)
 
 # Adicionar mais testes conforme necessário
-# create_lexer_test(test_token unit/test_token.cpp)
+create_lexer_test(test_token unit/test_token.cpp)
 create_lexer_test(test_errors unit/test_errors.cpp)
 create_lexer_test(test_error_recovery unit/test_error_recovery.cpp)
+
+# Testes de integração - Fase 5.4
+create_lexer_test(test_c_samples integration/test_c_samples.cpp)
+create_lexer_test(test_versions integration/test_versions.cpp)
 
 # Definir um target personalizado para executar todos os testes do lexer
 add_custom_target(run_all_lexer_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS test_lexer_config test_symbol_table test_lookahead_buffer test_lexer_logger test_states test_lexer test_lexer_phase42 test_advanced_literals test_errors test_error_recovery
+    DEPENDS test_lexer_config test_symbol_table test_lookahead_buffer test_lexer_logger test_states test_lexer test_lexer_phase42 test_lexer_phase53 test_advanced_literals test_token test_errors test_error_recovery test_c_samples test_versions
     COMMENT "Executando todos os testes do lexer"
 )

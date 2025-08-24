@@ -73,9 +73,13 @@ src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_lexer_logge
 src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_states
 src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_lexer
 src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_lexer_phase42
+src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_lexer_phase53
 src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_advanced_literals
+src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_token
 src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_errors
 src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_error_recovery
+src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_c_samples
+src/lexer/tests/CMakeFiles/run_all_lexer_tests: src/lexer/tests/test_versions
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/Users/Guilherme/CLionProjects/CompialdorC_v2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Executando todos os testes do lexer"
 	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests && /usr/local/bin/ctest --output-on-failure
 

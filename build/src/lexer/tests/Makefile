@@ -225,6 +225,20 @@ test_lexer_phase42/fast:
 .PHONY : test_lexer_phase42/fast
 
 # Convenience name for target.
+src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/rule:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/rule
+.PHONY : src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/rule
+
+# Convenience name for target.
+test_lexer_phase53: src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/rule
+.PHONY : test_lexer_phase53
+
+# fast build rule for target.
+test_lexer_phase53/fast:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/build.make src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/build
+.PHONY : test_lexer_phase53/fast
+
+# Convenience name for target.
 src/lexer/tests/CMakeFiles/test_advanced_literals.dir/rule:
 	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/lexer/tests/CMakeFiles/test_advanced_literals.dir/rule
 .PHONY : src/lexer/tests/CMakeFiles/test_advanced_literals.dir/rule
@@ -237,6 +251,20 @@ test_advanced_literals: src/lexer/tests/CMakeFiles/test_advanced_literals.dir/ru
 test_advanced_literals/fast:
 	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_advanced_literals.dir/build.make src/lexer/tests/CMakeFiles/test_advanced_literals.dir/build
 .PHONY : test_advanced_literals/fast
+
+# Convenience name for target.
+src/lexer/tests/CMakeFiles/test_token.dir/rule:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/lexer/tests/CMakeFiles/test_token.dir/rule
+.PHONY : src/lexer/tests/CMakeFiles/test_token.dir/rule
+
+# Convenience name for target.
+test_token: src/lexer/tests/CMakeFiles/test_token.dir/rule
+.PHONY : test_token
+
+# fast build rule for target.
+test_token/fast:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_token.dir/build.make src/lexer/tests/CMakeFiles/test_token.dir/build
+.PHONY : test_token/fast
 
 # Convenience name for target.
 src/lexer/tests/CMakeFiles/test_errors.dir/rule:
@@ -267,6 +295,34 @@ test_error_recovery/fast:
 .PHONY : test_error_recovery/fast
 
 # Convenience name for target.
+src/lexer/tests/CMakeFiles/test_c_samples.dir/rule:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/lexer/tests/CMakeFiles/test_c_samples.dir/rule
+.PHONY : src/lexer/tests/CMakeFiles/test_c_samples.dir/rule
+
+# Convenience name for target.
+test_c_samples: src/lexer/tests/CMakeFiles/test_c_samples.dir/rule
+.PHONY : test_c_samples
+
+# fast build rule for target.
+test_c_samples/fast:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_c_samples.dir/build.make src/lexer/tests/CMakeFiles/test_c_samples.dir/build
+.PHONY : test_c_samples/fast
+
+# Convenience name for target.
+src/lexer/tests/CMakeFiles/test_versions.dir/rule:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/lexer/tests/CMakeFiles/test_versions.dir/rule
+.PHONY : src/lexer/tests/CMakeFiles/test_versions.dir/rule
+
+# Convenience name for target.
+test_versions: src/lexer/tests/CMakeFiles/test_versions.dir/rule
+.PHONY : test_versions
+
+# fast build rule for target.
+test_versions/fast:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_versions.dir/build.make src/lexer/tests/CMakeFiles/test_versions.dir/build
+.PHONY : test_versions/fast
+
+# Convenience name for target.
 src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/rule:
 	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/rule
 .PHONY : src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/rule
@@ -279,6 +335,54 @@ run_all_lexer_tests: src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/rule
 run_all_lexer_tests/fast:
 	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/build.make src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/build
 .PHONY : run_all_lexer_tests/fast
+
+integration/test_c_samples.o: integration/test_c_samples.cpp.o
+.PHONY : integration/test_c_samples.o
+
+# target to build an object file
+integration/test_c_samples.cpp.o:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_c_samples.dir/build.make src/lexer/tests/CMakeFiles/test_c_samples.dir/integration/test_c_samples.cpp.o
+.PHONY : integration/test_c_samples.cpp.o
+
+integration/test_c_samples.i: integration/test_c_samples.cpp.i
+.PHONY : integration/test_c_samples.i
+
+# target to preprocess a source file
+integration/test_c_samples.cpp.i:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_c_samples.dir/build.make src/lexer/tests/CMakeFiles/test_c_samples.dir/integration/test_c_samples.cpp.i
+.PHONY : integration/test_c_samples.cpp.i
+
+integration/test_c_samples.s: integration/test_c_samples.cpp.s
+.PHONY : integration/test_c_samples.s
+
+# target to generate assembly for a file
+integration/test_c_samples.cpp.s:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_c_samples.dir/build.make src/lexer/tests/CMakeFiles/test_c_samples.dir/integration/test_c_samples.cpp.s
+.PHONY : integration/test_c_samples.cpp.s
+
+integration/test_versions.o: integration/test_versions.cpp.o
+.PHONY : integration/test_versions.o
+
+# target to build an object file
+integration/test_versions.cpp.o:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_versions.dir/build.make src/lexer/tests/CMakeFiles/test_versions.dir/integration/test_versions.cpp.o
+.PHONY : integration/test_versions.cpp.o
+
+integration/test_versions.i: integration/test_versions.cpp.i
+.PHONY : integration/test_versions.i
+
+# target to preprocess a source file
+integration/test_versions.cpp.i:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_versions.dir/build.make src/lexer/tests/CMakeFiles/test_versions.dir/integration/test_versions.cpp.i
+.PHONY : integration/test_versions.cpp.i
+
+integration/test_versions.s: integration/test_versions.cpp.s
+.PHONY : integration/test_versions.s
+
+# target to generate assembly for a file
+integration/test_versions.cpp.s:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_versions.dir/build.make src/lexer/tests/CMakeFiles/test_versions.dir/integration/test_versions.cpp.s
+.PHONY : integration/test_versions.cpp.s
 
 unit/test_advanced_literals.o: unit/test_advanced_literals.cpp.o
 .PHONY : unit/test_advanced_literals.o
@@ -448,6 +552,30 @@ unit/test_lexer_phase42.cpp.s:
 	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_lexer_phase42.dir/build.make src/lexer/tests/CMakeFiles/test_lexer_phase42.dir/unit/test_lexer_phase42.cpp.s
 .PHONY : unit/test_lexer_phase42.cpp.s
 
+unit/test_lexer_phase53.o: unit/test_lexer_phase53.cpp.o
+.PHONY : unit/test_lexer_phase53.o
+
+# target to build an object file
+unit/test_lexer_phase53.cpp.o:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/build.make src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/unit/test_lexer_phase53.cpp.o
+.PHONY : unit/test_lexer_phase53.cpp.o
+
+unit/test_lexer_phase53.i: unit/test_lexer_phase53.cpp.i
+.PHONY : unit/test_lexer_phase53.i
+
+# target to preprocess a source file
+unit/test_lexer_phase53.cpp.i:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/build.make src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/unit/test_lexer_phase53.cpp.i
+.PHONY : unit/test_lexer_phase53.cpp.i
+
+unit/test_lexer_phase53.s: unit/test_lexer_phase53.cpp.s
+.PHONY : unit/test_lexer_phase53.s
+
+# target to generate assembly for a file
+unit/test_lexer_phase53.cpp.s:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/build.make src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/unit/test_lexer_phase53.cpp.s
+.PHONY : unit/test_lexer_phase53.cpp.s
+
 unit/test_lookahead_buffer.o: unit/test_lookahead_buffer.cpp.o
 .PHONY : unit/test_lookahead_buffer.o
 
@@ -520,6 +648,30 @@ unit/test_symbol_table.cpp.s:
 	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_symbol_table.dir/build.make src/lexer/tests/CMakeFiles/test_symbol_table.dir/unit/test_symbol_table.cpp.s
 .PHONY : unit/test_symbol_table.cpp.s
 
+unit/test_token.o: unit/test_token.cpp.o
+.PHONY : unit/test_token.o
+
+# target to build an object file
+unit/test_token.cpp.o:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_token.dir/build.make src/lexer/tests/CMakeFiles/test_token.dir/unit/test_token.cpp.o
+.PHONY : unit/test_token.cpp.o
+
+unit/test_token.i: unit/test_token.cpp.i
+.PHONY : unit/test_token.i
+
+# target to preprocess a source file
+unit/test_token.cpp.i:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_token.dir/build.make src/lexer/tests/CMakeFiles/test_token.dir/unit/test_token.cpp.i
+.PHONY : unit/test_token.cpp.i
+
+unit/test_token.s: unit/test_token.cpp.s
+.PHONY : unit/test_token.s
+
+# target to generate assembly for a file
+unit/test_token.cpp.s:
+	cd /Users/Guilherme/CLionProjects/CompialdorC_v2/build && $(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_token.dir/build.make src/lexer/tests/CMakeFiles/test_token.dir/unit/test_token.cpp.s
+.PHONY : unit/test_token.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -531,15 +683,25 @@ help:
 	@echo "... test"
 	@echo "... run_all_lexer_tests"
 	@echo "... test_advanced_literals"
+	@echo "... test_c_samples"
 	@echo "... test_error_recovery"
 	@echo "... test_errors"
 	@echo "... test_lexer"
 	@echo "... test_lexer_config"
 	@echo "... test_lexer_logger"
 	@echo "... test_lexer_phase42"
+	@echo "... test_lexer_phase53"
 	@echo "... test_lookahead_buffer"
 	@echo "... test_states"
 	@echo "... test_symbol_table"
+	@echo "... test_token"
+	@echo "... test_versions"
+	@echo "... integration/test_c_samples.o"
+	@echo "... integration/test_c_samples.i"
+	@echo "... integration/test_c_samples.s"
+	@echo "... integration/test_versions.o"
+	@echo "... integration/test_versions.i"
+	@echo "... integration/test_versions.s"
 	@echo "... unit/test_advanced_literals.o"
 	@echo "... unit/test_advanced_literals.i"
 	@echo "... unit/test_advanced_literals.s"
@@ -561,6 +723,9 @@ help:
 	@echo "... unit/test_lexer_phase42.o"
 	@echo "... unit/test_lexer_phase42.i"
 	@echo "... unit/test_lexer_phase42.s"
+	@echo "... unit/test_lexer_phase53.o"
+	@echo "... unit/test_lexer_phase53.i"
+	@echo "... unit/test_lexer_phase53.s"
 	@echo "... unit/test_lookahead_buffer.o"
 	@echo "... unit/test_lookahead_buffer.i"
 	@echo "... unit/test_lookahead_buffer.s"
@@ -570,6 +735,9 @@ help:
 	@echo "... unit/test_symbol_table.o"
 	@echo "... unit/test_symbol_table.i"
 	@echo "... unit/test_symbol_table.s"
+	@echo "... unit/test_token.o"
+	@echo "... unit/test_token.i"
+	@echo "... unit/test_token.s"
 .PHONY : help
 
 

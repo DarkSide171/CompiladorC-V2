@@ -19,8 +19,16 @@ include_directories(src/lexer/include)
 # Adicionar subdiretorios
 add_subdirectory(src/lexer)
 
-# Biblioteca principal será criada quando necessário
-# add_library(CompialdorC_v2 STATIC library.cpp)
+# Criar executável principal
+add_executable(CompiladorC src/main.cpp)
+
+# Linkar com a biblioteca do lexer
+target_link_libraries(CompiladorC PRIVATE lexer)
+
+# Configurar diretórios de include para o executável
+target_include_directories(CompiladorC PRIVATE
+    src/lexer/include
+)
 
 # Habilitar testes
 enable_testing()

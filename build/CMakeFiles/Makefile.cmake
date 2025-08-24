@@ -60,6 +60,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
+  "CMakeFiles/CompiladorC.dir/DependInfo.cmake"
   "src/lexer/CMakeFiles/lexer.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/test_lexer_config.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/test_symbol_table.dir/DependInfo.cmake"
@@ -68,8 +69,12 @@ set(CMAKE_DEPEND_INFO_FILES
   "src/lexer/tests/CMakeFiles/test_states.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/test_lexer.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/test_lexer_phase42.dir/DependInfo.cmake"
+  "src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/test_advanced_literals.dir/DependInfo.cmake"
+  "src/lexer/tests/CMakeFiles/test_token.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/test_errors.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/test_error_recovery.dir/DependInfo.cmake"
+  "src/lexer/tests/CMakeFiles/test_c_samples.dir/DependInfo.cmake"
+  "src/lexer/tests/CMakeFiles/test_versions.dir/DependInfo.cmake"
   "src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/DependInfo.cmake"
   )

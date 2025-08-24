@@ -127,6 +127,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named CompiladorC
+
+# Build rule for target.
+CompiladorC: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CompiladorC
+.PHONY : CompiladorC
+
+# fast build rule for target.
+CompiladorC/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CompiladorC.dir/build.make CMakeFiles/CompiladorC.dir/build
+.PHONY : CompiladorC/fast
+
+#=============================================================================
 # Target rules for targets named lexer
 
 # Build rule for target.
@@ -231,6 +244,19 @@ test_lexer_phase42/fast:
 .PHONY : test_lexer_phase42/fast
 
 #=============================================================================
+# Target rules for targets named test_lexer_phase53
+
+# Build rule for target.
+test_lexer_phase53: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_lexer_phase53
+.PHONY : test_lexer_phase53
+
+# fast build rule for target.
+test_lexer_phase53/fast:
+	$(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/build.make src/lexer/tests/CMakeFiles/test_lexer_phase53.dir/build
+.PHONY : test_lexer_phase53/fast
+
+#=============================================================================
 # Target rules for targets named test_advanced_literals
 
 # Build rule for target.
@@ -242,6 +268,19 @@ test_advanced_literals: cmake_check_build_system
 test_advanced_literals/fast:
 	$(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_advanced_literals.dir/build.make src/lexer/tests/CMakeFiles/test_advanced_literals.dir/build
 .PHONY : test_advanced_literals/fast
+
+#=============================================================================
+# Target rules for targets named test_token
+
+# Build rule for target.
+test_token: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_token
+.PHONY : test_token
+
+# fast build rule for target.
+test_token/fast:
+	$(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_token.dir/build.make src/lexer/tests/CMakeFiles/test_token.dir/build
+.PHONY : test_token/fast
 
 #=============================================================================
 # Target rules for targets named test_errors
@@ -270,6 +309,32 @@ test_error_recovery/fast:
 .PHONY : test_error_recovery/fast
 
 #=============================================================================
+# Target rules for targets named test_c_samples
+
+# Build rule for target.
+test_c_samples: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_c_samples
+.PHONY : test_c_samples
+
+# fast build rule for target.
+test_c_samples/fast:
+	$(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_c_samples.dir/build.make src/lexer/tests/CMakeFiles/test_c_samples.dir/build
+.PHONY : test_c_samples/fast
+
+#=============================================================================
+# Target rules for targets named test_versions
+
+# Build rule for target.
+test_versions: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_versions
+.PHONY : test_versions
+
+# fast build rule for target.
+test_versions/fast:
+	$(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/test_versions.dir/build.make src/lexer/tests/CMakeFiles/test_versions.dir/build
+.PHONY : test_versions/fast
+
+#=============================================================================
 # Target rules for targets named run_all_lexer_tests
 
 # Build rule for target.
@@ -282,6 +347,30 @@ run_all_lexer_tests/fast:
 	$(MAKE) $(MAKESILENT) -f src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/build.make src/lexer/tests/CMakeFiles/run_all_lexer_tests.dir/build
 .PHONY : run_all_lexer_tests/fast
 
+src/main.o: src/main.cpp.o
+.PHONY : src/main.o
+
+# target to build an object file
+src/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CompiladorC.dir/build.make CMakeFiles/CompiladorC.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
+
+src/main.i: src/main.cpp.i
+.PHONY : src/main.i
+
+# target to preprocess a source file
+src/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CompiladorC.dir/build.make CMakeFiles/CompiladorC.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
+
+src/main.s: src/main.cpp.s
+.PHONY : src/main.s
+
+# target to generate assembly for a file
+src/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CompiladorC.dir/build.make CMakeFiles/CompiladorC.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -292,17 +381,25 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... run_all_lexer_tests"
+	@echo "... CompiladorC"
 	@echo "... lexer"
 	@echo "... test_advanced_literals"
+	@echo "... test_c_samples"
 	@echo "... test_error_recovery"
 	@echo "... test_errors"
 	@echo "... test_lexer"
 	@echo "... test_lexer_config"
 	@echo "... test_lexer_logger"
 	@echo "... test_lexer_phase42"
+	@echo "... test_lexer_phase53"
 	@echo "... test_lookahead_buffer"
 	@echo "... test_states"
 	@echo "... test_symbol_table"
+	@echo "... test_token"
+	@echo "... test_versions"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
 .PHONY : help
 
 

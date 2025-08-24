@@ -41,6 +41,10 @@ private:
     size_t currentPosition;                       ///< Posição absoluta no arquivo
     bool endOfFile;                               ///< Flag indicando fim do arquivo
     
+    // Cache para peekToken
+    mutable bool hasCachedToken;                  ///< Flag indicando se há token em cache
+    mutable Token cachedToken;                    ///< Token em cache para peekToken
+    
     // Métodos auxiliares privados
     char readNextChar();                          ///< Lê próximo caractere do buffer
     void skipWhitespace();                        ///< Pula espaços em branco
@@ -54,6 +58,7 @@ private:
     Token recognizeCharacter();                   ///< Reconhece literais de caractere
     Token recognizeOperator();                    ///< Reconhece operadores
     Token recognizeComment();                     ///< Reconhece comentários
+    void skipComment();                           ///< Pula comentários sem criar tokens
     
     // Métodos de validação
     bool isValidIdentifierStart(char ch) const;   ///< Verifica início válido de identificador

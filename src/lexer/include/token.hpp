@@ -96,6 +96,7 @@ enum class TokenType {
     LEFT_BRACE,     // {
     RIGHT_BRACE,    // }
     SEMICOLON,      // ;
+    HASH,           // #
     
     // Comentários
     LINE_COMMENT,   // //

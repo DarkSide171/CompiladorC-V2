@@ -140,6 +140,8 @@ private:
     LexerState current_state_;
     std::unordered_map<std::pair<LexerState, char>, LexerState> transition_table_;
     std::shared_ptr<ErrorHandler> error_handler_;
+    char last_processed_char_; // Para determinar o tipo específico de operador/delimitador
+    char accepting_char_; // Caractere que levou ao estado de aceitação
     
     // Métodos auxiliares privados
     void initializeTransitionTable();
@@ -200,6 +202,7 @@ LexerState stringToLexerState(const std::string& state_str);
 bool isAcceptingState(LexerState state);
 bool isErrorState(LexerState state);
 TokenType stateToTokenType(LexerState state);
+TokenType stateToTokenType(LexerState state, char last_char);
 
 } // namespace Lexer
 

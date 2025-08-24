@@ -57,7 +57,7 @@ void test_synchronize_recovery() {
     file << "int main() {\n";
     file << "    @ invalid char;\n";  // Erro 1
     file << "    int x = 10;\n";      // Ponto de sincronização
-    file << "    # another error;\n"; // Erro 2
+    file << "    $ another error;\n"; // Erro 2
     file << "    return 0;\n";        // Ponto de sincronização
     file << "}";
     file.close();

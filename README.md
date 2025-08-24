@@ -15,15 +15,19 @@ Este projeto consiste no desenvolvimento de um compilador completo para a lingua
 ## Fases do Compilador
 
 ### 1. Análise Léxica (Lexer)
-**Status: 🔄 Em Planejamento**
+**Status: ✅ Implementado**
 
 - **Objetivo**: Converter o código fonte em uma sequência de tokens
-- **Funcionalidades**:
-  - Reconhecimento de palavras-chave (if, while, for, etc.)
-  - Identificação de identificadores e literais
-  - Processamento de operadores e delimitadores
-  - Tratamento de comentários e espaços em branco
-  - Detecção de erros léxicos
+- **Funcionalidades Implementadas**:
+  - ✅ Reconhecimento de palavras-chave (if, while, for, etc.)
+  - ✅ Identificação de identificadores e literais
+  - ✅ Processamento de operadores e delimitadores
+  - ✅ Tratamento de comentários e espaços em branco
+  - ✅ Detecção de erros léxicos
+  - ✅ Múltiplos formatos de saída (verbose, summary, JSON)
+  - ✅ Sistema de filtros por categoria de tokens
+  - ✅ Estatísticas detalhadas e colorização
+  - ✅ Suporte a múltiplos arquivos e diretórios
 
 ### 2. Análise Sintática (Parser)
 **Status: 🔄 Em Planejamento**
@@ -89,16 +93,71 @@ CompialdorC_v2/
 
 ## Como Compilar
 
+### Opção 1: Script de Build (Recomendado)
 ```bash
-mkdir build
+# Compilação simples
+./build.sh
+
+# Compilação com limpeza
+./build.sh clean
+```
+
+### Opção 2: CMake Manual
+```bash
+mkdir -p build
 cd build
 cmake ..
 make
 ```
 
+## Como Usar
+
+Após a compilação, o executável `CompiladorC` estará disponível em `build/CompiladorC`.
+
+### Exemplos de Uso
+
+```bash
+# Ajuda
+./build/CompiladorC --help
+
+# Análise completa (verbose)
+./build/CompiladorC arquivo.c
+
+# Saída resumida
+./build/CompiladorC --summary arquivo.c
+
+# Saída em JSON
+./build/CompiladorC --json arquivo.c
+
+# Filtrar apenas palavras-chave
+./build/CompiladorC --filter-keywords arquivo.c
+
+# Combinar filtros
+./build/CompiladorC --summary --filter-operators --filter-keywords arquivo.c
+
+# Processar diretório inteiro
+./build/CompiladorC --summary src/
+```
+
+### Opções Disponíveis
+
+**Formatos de Saída:**
+- `--verbose` ou `-v`: Saída detalhada com cores (padrão)
+- `--summary` ou `-s`: Saída resumida com estatísticas
+- `--json` ou `-j`: Saída em formato JSON
+
+**Filtros por Categoria:**
+- `--filter-keywords`: Apenas palavras-chave
+- `--filter-operators`: Apenas operadores
+- `--filter-identifiers`: Apenas identificadores
+- `--filter-literals`: Apenas literais
+- `--filter-delimiters`: Apenas delimitadores
+- `--filter-punctuation`: Apenas pontuação
+- `--filter-preprocessor`: Apenas diretivas de preprocessador
+
 ## Roadmap de Desenvolvimento
 
-- [ ] **Fase 1**: Implementação do Analisador Léxico
+- [x] **Fase 1**: Implementação do Analisador Léxico ✅
 - [ ] **Fase 2**: Implementação do Analisador Sintático
 - [ ] **Fase 3**: Implementação do Analisador Semântico
 - [ ] **Fase 4**: Geração de Código Intermediário

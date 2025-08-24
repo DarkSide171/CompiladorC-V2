@@ -168,7 +168,7 @@ std::string tokenTypeToString(TokenType type) {
         {TokenType::XOR_ASSIGN, "XOR_ASSIGN"}, {TokenType::LEFT_SHIFT_ASSIGN, "LEFT_SHIFT_ASSIGN"},
         {TokenType::RIGHT_SHIFT_ASSIGN, "RIGHT_SHIFT_ASSIGN"}, {TokenType::CONDITIONAL, "CONDITIONAL"},
         {TokenType::COLON, "COLON"}, {TokenType::COMMA, "COMMA"}, {TokenType::DOT, "DOT"},
-        {TokenType::ARROW, "ARROW"},
+        {TokenType::ARROW, "ARROW"}, {TokenType::HASH, "HASH"},
         
         // Delimitadores
         {TokenType::LEFT_PAREN, "LEFT_PAREN"}, {TokenType::RIGHT_PAREN, "RIGHT_PAREN"},
