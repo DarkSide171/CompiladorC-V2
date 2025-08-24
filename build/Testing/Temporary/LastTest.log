@@ -1,0 +1,296 @@
+Start testing: Aug 24 13:02 -03
+----------------------------------------------------------
+1/7 Testing: test_lexer_config
+1/7 Test: test_lexer_config
+Command: "/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/test_lexer_config"
+Directory: /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests
+"test_lexer_config" start time: Aug 24 13:02 -03
+Output:
+----------------------------------------------------------
+=== INICIANDO TESTES DA LEXERCONFIG ===
+
+=== Teste de Construção Básica ===
+[PASS] Versão padrão é C89
+[PASS] Keywords não estão vazias
+[INFO] C89 tem 0 features habilitadas
+
+=== Teste de Gerenciamento de Versão ===
+[PASS] Definir versão C99
+[PASS] Definir versão C11
+[PASS] Definir versão C23
+
+=== Teste de Palavras-chave Básicas ===
+[PASS] 'int' é palavra-chave
+[PASS] 'char' é palavra-chave
+[PASS] 'float' é palavra-chave
+[PASS] 'double' é palavra-chave
+[PASS] 'void' é palavra-chave
+[PASS] 'if' é palavra-chave
+[PASS] 'else' é palavra-chave
+[PASS] 'while' é palavra-chave
+[PASS] 'for' é palavra-chave
+[PASS] 'return' é palavra-chave
+[PASS] 'myVariable' não é palavra-chave
+[PASS] 'function_name' não é palavra-chave
+
+=== Teste de Palavras-chave por Versão ===
+[PASS] C99: 'inline' é palavra-chave
+[PASS] C99: 'restrict' é palavra-chave
+[PASS] C99: '_Bool' é palavra-chave
+[PASS] C11: '_Atomic' é palavra-chave
+[PASS] C11: '_Static_assert' é palavra-chave
+[PASS] C11: '_Thread_local' é palavra-chave
+
+=== Teste de Gerenciamento de Features ===
+[PASS] Feature ATOMIC_OPERATIONS habilitada
+[PASS] Feature ATOMIC_OPERATIONS desabilitada
+[PASS] Todas as features desabilitadas
+
+=== Teste de Funções Utilitárias ===
+[PASS] Conversão C89 para string
+[PASS] Conversão C99 para string
+[PASS] Conversão C11 para string
+[PASS] Conversão C17 para string
+[PASS] Conversão C23 para string
+[PASS] Conversão string para C89
+[PASS] Conversão string para C99
+[PASS] Conversão string para C11
+[PASS] Conversão string para C17
+[PASS] Conversão string para C23
+
+=== Teste de Operadores de Comparação ===
+[PASS] Configurações iguais
+[PASS] Operador != com configurações iguais
+[PASS] Configurações diferentes
+[PASS] Operador == com configurações diferentes
+
+=== TODOS OS TESTES PASSARAM! ===
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_lexer_config" end time: Aug 24 13:02 -03
+"test_lexer_config" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/7 Testing: test_symbol_table
+2/7 Test: test_symbol_table
+Command: "/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/test_symbol_table"
+Directory: /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests
+"test_symbol_table" start time: Aug 24 13:02 -03
+Output:
+----------------------------------------------------------
+=== Testes da SymbolTable (Fase 2.1) ===
+
+Testando construção básica... ✓
+Testando inserção e busca... ✓
+Testando adição de ocorrências... ✓
+Testando detecção de palavras-chave... ✓
+Testando integração com LexerConfig... ✓
+Testando obtenção de todos os símbolos... ✓
+Testando limpeza da tabela... ✓
+Testando fator de carga e rehash... ✓
+Testando impressão de estatísticas... ✓
+
+✅ Todos os testes da SymbolTable passaram com sucesso!
+🎉 Fase 2.1 implementada corretamente!
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_symbol_table" end time: Aug 24 13:02 -03
+"test_symbol_table" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/7 Testing: test_lookahead_buffer
+3/7 Test: test_lookahead_buffer
+Command: "/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/test_lookahead_buffer"
+Directory: /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests
+"test_lookahead_buffer" start time: Aug 24 13:02 -03
+Output:
+----------------------------------------------------------
+=== Testes do LookaheadBuffer ===
+
+Testando construtor... PASSOU
+Testando construtor com tamanho inválido... PASSOU
+Testando peek básico... PASSOU
+Testando peek com offset inválido... PASSOU
+Testando peek além do EOF... PASSOU
+Testando consume básico... PASSOU
+Testando consume em stream vazio... PASSOU
+Testando putback... PASSOU
+Testando putback múltiplo... PASSOU
+Testando hasMore... PASSOU
+Testando clear... PASSOU
+Testando buffer pequeno com texto longo... PASSOU
+Testando peek e consume intercalados... PASSOU
+Testando expansão automática do buffer... PASSOU
+
+=== TODOS OS TESTES PASSARAM! ===
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_lookahead_buffer" end time: Aug 24 13:02 -03
+"test_lookahead_buffer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/7 Testing: test_lexer_logger
+4/7 Test: test_lexer_logger
+Command: "/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/test_lexer_logger"
+Directory: /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests
+"test_lexer_logger" start time: Aug 24 13:02 -03
+Output:
+----------------------------------------------------------
+=== Iniciando Testes do LexerLogger ===
+Testando construtor do LexerLogger...
+✓ Construtor funcionando corretamente
+Testando setLogLevel()...
+✓ setLogLevel funcionando corretamente
+Testando controle de saída no console...
+✓ Controle de console funcionando corretamente
+Testando saída para arquivo...
+[2025-08-24 13:02:06.401] [INFO] Teste de escrita no arquivo
+✓ Saída para arquivo funcionando corretamente
+Testando níveis de log...
+✓ Níveis de log funcionando corretamente
+Testando logToken()...
+✓ logToken funcionando corretamente
+Testando logStateTransition()...
+✓ logStateTransition funcionando corretamente
+Testando funções utilitárias...
+✓ Funções utilitárias funcionando corretamente
+Testando cenário completo de logging...
+[2025-08-24 13:02:06.402] [INFO] Iniciando análise léxica
+[2025-08-24 13:02:06.402] [DEBUG] Token gerado: [Tipo: 23, Lexeme: 'int', Posição: (1,1)]
+[2025-08-24 13:02:06.402] [DEBUG] Transição de estado: PROCESSING -> NEXT_TOKEN
+[2025-08-24 13:02:06.402] [DEBUG] Token gerado: [Tipo: 2, Lexeme: 'main', Posição: (1,1)]
+[2025-08-24 13:02:06.403] [DEBUG] Transição de estado: PROCESSING -> NEXT_TOKEN
+[2025-08-24 13:02:06.403] [DEBUG] Token gerado: [Tipo: 95, Lexeme: '(', Posição: (1,1)]
+[2025-08-24 13:02:06.403] [DEBUG] Transição de estado: PROCESSING -> NEXT_TOKEN
+[2025-08-24 13:02:06.403] [DEBUG] Token gerado: [Tipo: 96, Lexeme: ')', Posição: (1,1)]
+[2025-08-24 13:02:06.403] [DEBUG] Transição de estado: PROCESSING -> NEXT_TOKEN
+[2025-08-24 13:02:06.403] [INFO] Análise léxica concluída
+✓ Cenário completo funcionando corretamente
+
+=== Todos os testes do LexerLogger passaram! ===
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_lexer_logger" end time: Aug 24 13:02 -03
+"test_lexer_logger" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/7 Testing: test_states
+5/7 Test: test_states
+Command: "/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/test_states"
+Directory: /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests
+"test_states" start time: Aug 24 13:02 -03
+Output:
+----------------------------------------------------------
+=== INICIANDO TESTES DA MÁQUINA DE ESTADOS ===
+
+=== Testando Funções Utilitárias ===
+[PASS] Funções Utilitárias
+
+=== Testando Construtores da StateMachine ===
+[PASS] Construtores da StateMachine
+
+=== Testando Métodos Básicos de Estado ===
+[PASS] Métodos Básicos de Estado
+
+=== Testando Transições de Identificadores ===
+[PASS] Transições de Identificadores
+
+=== Testando Transições de Números Inteiros ===
+[PASS] Transições de Números Inteiros
+
+=== Testando Transições de Números Float ===
+[PASS] Transições de Números Float
+
+=== Testando Transições de Strings ===
+[PASS] Transições de Strings
+
+=== Testando Transições de Caracteres ===
+[PASS] Transições de Caracteres
+
+=== Testando Transições de Operadores ===
+[PASS] Transições de Operadores
+
+=== Testando Transições de Comentários ===
+[PASS] Transições de Comentários
+
+=== Testando Transições de Delimitadores ===
+[PASS] Transições de Delimitadores
+
+=== Testando Métodos de Verificação de Estado ===
+[PASS] Métodos de Verificação de Estado
+
+=== Testando Métodos Utilitários e Debug ===
+[PASS] Métodos Utilitários e Debug
+
+=== Testando Cenário Completo ===
+[PASS] Cenário Completo
+
+=== TODOS OS TESTES PASSARAM COM SUCESSO! ===
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_states" end time: Aug 24 13:02 -03
+"test_states" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/7 Testing: test_lexer
+6/7 Test: test_lexer
+Command: "/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/test_lexer"
+Directory: /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests
+"test_lexer" start time: Aug 24 13:02 -03
+Output:
+----------------------------------------------------------
+=== Testes da Fase 4.1 - LexerMain ===
+Testando construtor e destrutor... PASSOU
+Testando nextToken()... PASSOU
+Testando hasMoreTokens()... PASSOU
+Testando getCurrentPosition()... PASSOU
+Testando setVersion()... PASSOU
+Testando reset()... PASSOU
+Testando tokenizeAll()... PASSOU (2 tokens)
+
+=== Testes concluídos ===
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"test_lexer" end time: Aug 24 13:02 -03
+"test_lexer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/7 Testing: test_lexer_phase42
+7/7 Test: test_lexer_phase42
+Command: "/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/test_lexer_phase42"
+Directory: /Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests
+"test_lexer_phase42" start time: Aug 24 13:02 -03
+Output:
+----------------------------------------------------------
+=== Testes da Fase 4.2 - Reconhecimento de Tokens ===
+Testando reconhecimento de identificadores... PASSOU (4 identificadores)
+Testando reconhecimento de palavras-chave... PASSOU (6 palavras-chave)
+Testando reconhecimento de números... PASSOU (4 números)
+Testando reconhecimento de strings... PASSOU (3 strings)
+Testando reconhecimento de caracteres... PASSOU (4 caracteres)
+Testando reconhecimento de operadores... PASSOU (12 operadores)
+Testando reconhecimento de comentários... PASSOU (1 comentários)
+Testando código C real... PASSOU (46 tokens total)
+
+=== Testes da Fase 4.2 concluídos ===
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_lexer_phase42" end time: Aug 24 13:02 -03
+"test_lexer_phase42" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Aug 24 13:02 -03

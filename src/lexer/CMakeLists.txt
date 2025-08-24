@@ -5,6 +5,11 @@ set(LEXER_SOURCES
     src/lexer_config.cpp
     src/error_handler.cpp
     src/token.cpp
+    src/symbol_table.cpp
+    src/lookahead_buffer.cpp
+    src/lexer_logger.cpp
+    src/lexer_state.cpp
+    src/lexer.cpp
 )
 
 # Definir arquivos de cabeçalho do lexer
@@ -12,6 +17,11 @@ set(LEXER_HEADERS
     include/lexer_config.hpp
     include/error_handler.hpp
     include/token.hpp
+    include/symbol_table.hpp
+    include/lookahead_buffer.hpp   
+    include/lexer_logger.hpp
+    include/lexer_state.hpp
+    include/lexer.hpp
 )
 
 # Criar biblioteca do lexer

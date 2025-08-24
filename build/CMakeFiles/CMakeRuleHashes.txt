@@ -1,0 +1,2 @@
+# Hashes of file build rules.
+a5ddf96416d88890397e183df6f2fbe1 src/lexer/tests/CMakeFiles/run_all_lexer_tests

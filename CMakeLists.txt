@@ -19,8 +19,8 @@ include_directories(src/lexer/include)
 # Adicionar subdiretorios
 add_subdirectory(src/lexer)
 
-# Biblioteca principal (placeholder)
-add_library(CompialdorC_v2 STATIC library.cpp)
+# Biblioteca principal será criada quando necessário
+# add_library(CompialdorC_v2 STATIC library.cpp)
 
 # Habilitar testes
 enable_testing()

@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/Guilherme/CLionProjects/CompialdorC_v2/build/cmake_install.cmake",
+		"/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/cmake_install.cmake",
+		"/Users/Guilherme/CLionProjects/CompialdorC_v2/build/src/lexer/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

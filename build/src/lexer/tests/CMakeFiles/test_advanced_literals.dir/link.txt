@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -O0 -Wall -Wextra -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/test_advanced_literals.dir/unit/test_advanced_literals.cpp.o -o test_advanced_literals  ../liblexer.a

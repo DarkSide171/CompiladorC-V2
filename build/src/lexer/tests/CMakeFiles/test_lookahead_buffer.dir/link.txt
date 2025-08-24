@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -O0 -Wall -Wextra -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/test_lookahead_buffer.dir/unit/test_lookahead_buffer.cpp.o -o test_lookahead_buffer  ../liblexer.a

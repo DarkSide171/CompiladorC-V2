@@ -479,6 +479,139 @@ bool isFeatureAvailableInVersion(Lexer::Feature feature, Lexer::CVersion version
     }
 }
 
+// ============================================================================
+// Configuração de Arquivos
+// ============================================================================
+
+void LexerConfig::parseConfigFile(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        if (errorHandler) {
+            errorHandler->reportError(ErrorType::FILE_NOT_FOUND,
+                "Não foi possível abrir arquivo de configuração: " + filename, Position{0, 0, 0});
+        }
+        return;
+    }
+    
+    std::string line;
+    int lineNumber = 0;
+    
+    while (std::getline(file, line)) {
+        lineNumber++;
+        
+        // Remove comentários e espaços em branco
+        size_t commentPos = line.find('#');
+        if (commentPos != std::string::npos) {
+            line = line.substr(0, commentPos);
+        }
+        
+        // Remove espaços em branco no início e fim
+        line.erase(0, line.find_first_not_of(" \t\r\n"));
+        line.erase(line.find_last_not_of(" \t\r\n") + 1);
+        
+        if (line.empty()) continue;
+        
+        // Parse da linha de configuração (formato: chave=valor)
+        size_t equalPos = line.find('=');
+        if (equalPos == std::string::npos) {
+            if (errorHandler) {
+                errorHandler->reportError(ErrorType::INVALID_EXPRESSION,
+                    "Formato inválido na linha " + std::to_string(lineNumber) + ": " + line,
+                    Position{lineNumber, 1, 0});
+            }
+            continue;
+        }
+        
+        std::string key = line.substr(0, equalPos);
+        std::string value = line.substr(equalPos + 1);
+        
+        // Remove espaços em branco da chave e valor
+        key.erase(0, key.find_first_not_of(" \t"));
+        key.erase(key.find_last_not_of(" \t") + 1);
+        value.erase(0, value.find_first_not_of(" \t"));
+        value.erase(value.find_last_not_of(" \t") + 1);
+        
+        // Processa as configurações
+        try {
+            if (key == "version") {
+                CVersion version = stringToVersion(value);
+                setVersion(version);
+            } else if (key == "enable_feature") {
+                Feature feature = stringToFeature(value);
+                enableFeature(feature);
+            } else if (key == "disable_feature") {
+                Feature feature = stringToFeature(value);
+                disableFeature(feature);
+            } else if (key == "keyword_file") {
+                loadKeywords(value);
+            } else {
+                if (errorHandler) {
+                    errorHandler->reportError(ErrorType::INVALID_EXPRESSION,
+                        "Chave de configuração desconhecida na linha " + std::to_string(lineNumber) + ": " + key,
+                        Position{lineNumber, 1, 0});
+                }
+            }
+        } catch (const std::exception& e) {
+            if (errorHandler) {
+                errorHandler->reportError(ErrorType::INVALID_EXPRESSION,
+                    "Erro ao processar configuração na linha " + std::to_string(lineNumber) + ": " + e.what(),
+                    Position{lineNumber, 1, 0});
+            }
+        }
+    }
+    
+    file.close();
+}
+
+void LexerConfig::saveConfigFile(const std::string& filename) const {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        if (errorHandler) {
+            errorHandler->reportError(ErrorType::FILE_NOT_FOUND,
+                "Não foi possível criar arquivo de configuração: " + filename, Position{0, 0, 0});
+        }
+        return;
+    }
+    
+    // Cabeçalho do arquivo
+    file << "# Arquivo de Configuração do Analisador Léxico\n";
+    file << "# Gerado automaticamente\n\n";
+    
+    // Versão do C
+    file << "# Versão do padrão C\n";
+    file << "version=" << versionToString(currentVersion) << "\n\n";
+    
+    // Features habilitadas
+    if (!enabledFeatures.empty()) {
+        file << "# Features habilitadas\n";
+        for (const auto& feature : enabledFeatures) {
+            file << "enable_feature=" << featureToString(feature) << "\n";
+        }
+        file << "\n";
+    }
+    
+    // Palavras-chave personalizadas (apenas as que não são padrão)
+    std::set<std::string> defaultKeywords;
+    LexerConfig tempConfig(currentVersion, nullptr);
+    auto tempKeywords = tempConfig.getKeywords();
+    
+    file << "# Palavras-chave personalizadas (além das padrão)\n";
+    bool hasCustomKeywords = false;
+    for (const auto& keyword : keywords) {
+        if (tempKeywords.find(keyword) == tempKeywords.end()) {
+            file << "# Palavra-chave personalizada: " << keyword << "\n";
+            hasCustomKeywords = true;
+        }
+    }
+    
+    if (!hasCustomKeywords) {
+        file << "# Nenhuma palavra-chave personalizada definida\n";
+    }
+    
+    file << "\n# Fim da configuração\n";
+    file.close();
+}
+
 std::unordered_set<Lexer::Feature> getDefaultFeatures(Lexer::CVersion version) {
     std::unordered_set<Lexer::Feature> features;
     

@@ -1,0 +1,8 @@
+test_lexer_config 10 0.00110325
+test_symbol_table 8 0.00125431
+test_lookahead_buffer 8 0.00071026
+test_lexer_logger 8 0.00161206
+test_states 8 0.00117377
+test_lexer 8 0.00201966
+test_lexer_phase42 3 0.00390622
+---
