@@ -1,2 +1,0 @@
-/usr/bin/ar qc liblexer.a CMakeFiles/lexer.dir/src/lexer_config.cpp.o CMakeFiles/lexer.dir/src/error_handler.cpp.o CMakeFiles/lexer.dir/src/token.cpp.o CMakeFiles/lexer.dir/src/symbol_table.cpp.o CMakeFiles/lexer.dir/src/lookahead_buffer.cpp.o CMakeFiles/lexer.dir/src/lexer_logger.cpp.o CMakeFiles/lexer.dir/src/lexer_state.cpp.o CMakeFiles/lexer.dir/src/lexer.cpp.o
-/usr/bin/ranlib liblexer.a
