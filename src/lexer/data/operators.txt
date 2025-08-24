@@ -1,0 +1,59 @@
+# Operadores da linguagem C
+# Lista completa de operadores suportados
+
+# Operadores Aritméticos
++
+-
+*
+/
+%
+++
+--
+
+# Operadores de Atribuição
+=
++=
+-=
+*=
+/=
+%=
+&=
+|=
+^=
+<<=
+>>=
+
+# Operadores de Comparação
+==
+!=
+<
+>
+<=
+>=
+
+# Operadores Lógicos
+&&
+||
+!
+
+# Operadores Bitwise
+&
+|
+^
+~
+<<
+>>
+
+# Operadores de Acesso
+.
+->
+[]
+
+# Outros Operadores
+?
+:
+,
+;
+()
+{}
+sizeof

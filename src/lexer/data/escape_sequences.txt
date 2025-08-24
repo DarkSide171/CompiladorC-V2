@@ -1,0 +1,26 @@
+# Sequências de Escape da linguagem C
+# Lista completa de sequências de escape suportadas
+
+# Sequências de Escape Básicas
+\a    # Alert (bell)
+\b    # Backspace
+\f    # Form feed
+\n    # New line
+\r    # Carriage return
+\t    # Horizontal tab
+\v    # Vertical tab
+\\    # Backslash
+\'    # Single quote
+\"    # Double quote
+\?    # Question mark
+
+# Sequências de Escape Octais
+\0    # Null character
+\nnn  # Octal notation (nnn = 1-3 octal digits)
+
+# Sequências de Escape Hexadecimais
+\xhh  # Hexadecimal notation (hh = 1-2 hex digits)
+
+# Sequências de Escape Unicode (C99+)
+\uhhhh      # Unicode code point (4 hex digits)
+\Uhhhhhhhh  # Unicode code point (8 hex digits)

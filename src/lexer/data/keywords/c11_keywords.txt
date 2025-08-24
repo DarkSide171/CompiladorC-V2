@@ -1,0 +1,10 @@
+# Palavras-chave adicionais do padrão C11
+# Novas palavras reservadas introduzidas no C11
+
+_Alignas
+_Alignof
+_Atomic
+_Static_assert
+_Noreturn
+_Thread_local
+_Generic

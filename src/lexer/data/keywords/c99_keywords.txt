@@ -1,0 +1,8 @@
+# Palavras-chave adicionais do padrão C99
+# Novas palavras reservadas introduzidas no C99
+
+inline
+restrict
+_Bool
+_Complex
+_Imaginary

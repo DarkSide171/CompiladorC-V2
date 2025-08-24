@@ -1,0 +1,9 @@
+# Palavras-chave adicionais do padrão C23
+# Novas palavras reservadas introduzidas no C23
+
+_BitInt
+typeof
+typeof_unqual
+_Decimal128
+_Decimal32
+_Decimal64

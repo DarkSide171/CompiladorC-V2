@@ -1,0 +1,7 @@
+# Palavras-chave do padrão C17
+# C17 é principalmente uma correção técnica do C11, sem novas palavras-chave
+# Este arquivo está vazio pois C17 não introduziu novas palavras reservadas
+
+# Nota: C17 (ISO/IEC 9899:2018) é uma revisão técnica do C11
+# que corrige defeitos e esclarece comportamentos indefinidos,
+# mas não adiciona novos recursos de linguagem ou palavras-chave
