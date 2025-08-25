@@ -1,4 +1,9 @@
 # CMakeLists.txt para testes do Lexer
+cmake_minimum_required(VERSION 3.16)
+project(LexerTests)
+
+# Define diretório de saída para executáveis de teste
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../../build/tests)
 
 # Função auxiliar para criar testes
 function(create_lexer_test test_name source_file)

@@ -68,20 +68,32 @@ Este projeto consiste no desenvolvimento de um compilador completo para a lingua
   - Alocação de registradores
   - Otimizações de código
 
-## Estrutura do Projeto
+## 📁 Estrutura do Projeto
 
 ```
 CompialdorC_v2/
 ├── src/
-│   ├── lexer/          # Analisador léxico
-│   ├── parser/         # Analisador sintático
-│   ├── semantic/       # Analisador semântico
-│   ├── codegen/        # Geração de código
-│   └── utils/          # Utilitários comuns
-├── Tests/              # Testes unitários e de integração
-├── Docs/               # Documentação detalhada
-├── Examples/           # Exemplos de código C para teste
-└── CMakeLists.txt      # Configuração de build
+│   ├── preprocessor/       # Preprocessador C (Nova Fase 0.5)
+│   │   ├── include/        # Headers do preprocessador
+│   │   ├── src/            # Implementações
+│   │   ├── data/           # Headers padrão e configurações
+│   │   ├── tests/          # Testes do preprocessador
+│   │   └── CMakeLists.txt  # Build do preprocessador
+│   ├── lexer/              # Analisador Léxico (Fase 1)
+│   │   ├── include/        # Headers (.hpp)
+│   │   ├── src/            # Implementações (.cpp)
+│   │   ├── tests/          # Testes unitários
+│   │   └── CMakeLists.txt  # Configuração CMake
+│   ├── parser/             # Analisador Sintático (Fase 2 - Planejado)
+│   ├── semantic/           # Analisador Semântico (Fase 3 - Planejado)
+│   └── codegen/            # Geração de Código (Fases 4-5 - Planejado)
+├── Tests/                  # Testes unitários e de integração
+├── Docs/                   # Documentação técnica completa
+│   ├── PREPROCESSADOR.md   # Especificação do preprocessador
+│   ├── ANALISADOR_SINTATICO.md # Especificação do parser
+│   └── PROJETO_COMPILADOR_STATUS.md # Status geral
+├── Examples/               # Exemplos de código C para teste
+└── CMakeLists.txt          # Configuração de build
 ```
 
 ## Tecnologias Utilizadas
@@ -155,14 +167,38 @@ Após a compilação, o executável `CompiladorC` estará disponível em `build/
 - `--filter-punctuation`: Apenas pontuação
 - `--filter-preprocessor`: Apenas diretivas de preprocessador
 
-## Roadmap de Desenvolvimento
+## 🗺️ Roadmap de Desenvolvimento
 
-- [x] **Fase 1**: Implementação do Analisador Léxico ✅
-- [ ] **Fase 2**: Implementação do Analisador Sintático
-- [ ] **Fase 3**: Implementação do Analisador Semântico
-- [ ] **Fase 4**: Geração de Código Intermediário
-- [ ] **Fase 5**: Geração de Código Final
-- [ ] **Fase 6**: Otimizações e Melhorias
+### ✅ Fase 1: Analisador Léxico (CONCLUÍDO)
+- **Status**: ✅ Implementado e testado
+- **Recursos**: Tokenização completa, tratamento de erros, suporte C89-C23
+- **Preprocessamento**: ✅ Reconhecimento básico de diretivas implementado
+- **Localização**: `src/lexer/`
+
+### ✅ Capacidades de Preprocessamento (FUNCIONAL BÁSICO)
+- **Status**: ✅ Reconhecimento de diretivas implementado
+- **Funcionalidades**: Tokenização de `#include`, `#define`, `#ifdef`, etc.
+- **Limitações**: Sem expansão de macros ou inclusão de arquivos
+- **Conclusão**: Suficiente para desenvolvimento do parser
+- **Documentação**: `Docs/ANALISE_PREPROCESSAMENTO_ATUAL.md`
+
+### 🚀 Fase 2: Analisador Sintático (PRONTO PARA IMPLEMENTAÇÃO)
+- **Status**: 📋 Especificação completa, pronto para implementação
+- **Prioridade**: 🔴 Alta - próxima fase a ser implementada
+- **Arquitetura**: Parser recursivo descendente
+- **Documentação**: `Docs/ANALISADOR_SINTATICO.md`
+
+### ⏳ Fase 3: Analisador Semântico (ESPECIFICAÇÃO COMPLETA)
+- **Status**: 📋 Especificação completa, aguardando parser
+- **Componentes**: Tabela de símbolos, verificação de tipos, análise de escopo
+
+### ⏳ Fase 4: Geração de Código Intermediário (PLANEJAMENTO)
+- **Status**: 📋 Planejamento inicial
+- **Formato**: Three-Address Code ou representação similar
+
+### ⏳ Fase 5: Geração de Código Final (CONCEITUAL)
+- **Status**: 📋 Definição de arquitetura alvo
+- **Opções**: Assembly x86-64, LLVM IR, ou outras arquiteturas
 
 ## Contribuição
 

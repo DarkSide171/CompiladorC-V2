@@ -1,0 +1,6 @@
+# Diretivas do C17
+# TODO: Implementar na Fase 1.3
+
+# Diretivas específicas do C17
+# (Herda todas as diretivas do C11)
+# C17 é principalmente correções de bugs do C11

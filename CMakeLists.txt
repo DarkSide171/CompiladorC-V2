@@ -15,9 +15,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 # Incluir diretórios
 include_directories(src/lexer/include)
+include_directories(src/preprocessor/include)
 
 # Adicionar subdiretorios
 add_subdirectory(src/lexer)
+add_subdirectory(src/preprocessor)
 
 # Criar executável principal
 add_executable(CompiladorC src/main.cpp)
@@ -35,3 +37,4 @@ enable_testing()
 
 # Adicionar testes
 add_subdirectory(src/lexer/tests)
+add_subdirectory(src/preprocessor/tests)

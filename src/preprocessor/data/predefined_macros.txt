@@ -1,0 +1,17 @@
+# Macros predefinidas por versão
+# TODO: Implementar na Fase 2.1
+
+# Macros padrão
+__FILE__
+__LINE__
+__DATE__
+__TIME__
+__STDC__
+__STDC_VERSION__
+
+# Macros específicas por versão do C
+# C89: __STDC__ = 1
+# C99: __STDC_VERSION__ = 199901L
+# C11: __STDC_VERSION__ = 201112L
+# C17: __STDC_VERSION__ = 201710L
+# C23: __STDC_VERSION__ = 202311L

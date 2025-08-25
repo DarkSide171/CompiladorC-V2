@@ -1,4 +1,6 @@
 # CMakeLists.txt para o módulo Lexer
+cmake_minimum_required(VERSION 3.16)
+project(Lexer)
 
 # Definir arquivos fonte do lexer
 set(LEXER_SOURCES
@@ -23,6 +25,11 @@ set(LEXER_HEADERS
     include/lexer_state.hpp
     include/lexer.hpp
 )
+
+# Define diretório de saída para biblioteca
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../build/lexer)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../build/lexer)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../build/lexer)
 
 # Criar biblioteca do lexer
 add_library(lexer STATIC ${LEXER_SOURCES} ${LEXER_HEADERS})

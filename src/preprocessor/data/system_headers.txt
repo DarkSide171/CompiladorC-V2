@@ -1,0 +1,16 @@
+# Caminhos de headers do sistema
+# TODO: Implementar na Fase 2.2
+
+# Caminhos padrão para macOS
+/usr/include
+/usr/local/include
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include
+
+# Caminhos padrão para Linux
+/usr/include
+/usr/local/include
+/usr/include/x86_64-linux-gnu
+
+# Caminhos padrão para Windows (MinGW)
+/mingw64/include
+/mingw32/include

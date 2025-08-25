@@ -1,0 +1,16 @@
+# Diretivas do C89/C90
+# TODO: Implementar na Fase 1.3
+
+# Diretivas básicas
+#include
+#define
+#undef
+#if
+#ifdef
+#ifndef
+#else
+#elif
+#endif
+#error
+#line
+#pragma

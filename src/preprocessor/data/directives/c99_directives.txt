@@ -1,0 +1,6 @@
+# Diretivas adicionais do C99
+# TODO: Implementar na Fase 1.3
+
+# Diretivas específicas do C99
+# (Herda todas as diretivas do C89)
+# Extensões para macros variádicas
