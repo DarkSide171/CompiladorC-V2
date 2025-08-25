@@ -247,8 +247,70 @@ size_t ExpressionEvaluator::skipWhitespace(const std::string& expr, size_t pos) 
 
 // Implementações dos métodos principais
 std::vector<ExpressionToken> ExpressionEvaluator::parseTokens(const std::vector<ExpressionToken>& tokens) {
+    // Verificar se há operadores defined() que precisam de tratamento especial
+    bool hasDefinedOperator = false;
+    for (const auto& token : tokens) {
+        if (token.type == ExpressionTokenType::DEFINED) {
+            hasDefinedOperator = true;
+            break;
+        }
+    }
+    
+    // Se há operador defined(), pré-processar para avaliar defined() primeiro
+    if (hasDefinedOperator) {
+        return preprocessDefinedOperators(tokens);
+    }
+    
     // Usar o algoritmo Shunting Yard para converter para notação pós-fixa
     return handleOperatorPrecedence(tokens);
+}
+
+std::vector<ExpressionToken> ExpressionEvaluator::preprocessDefinedOperators(const std::vector<ExpressionToken>& tokens) {
+    std::vector<ExpressionToken> result;
+    
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        if (tokens[i].type == ExpressionTokenType::DEFINED) {
+            // Processar defined(identifier) ou defined identifier
+            size_t nextIndex = i + 1;
+            bool hasParens = false;
+            
+            // Verificar se há parênteses
+            if (nextIndex < tokens.size() && tokens[nextIndex].type == ExpressionTokenType::LEFT_PAREN) {
+                hasParens = true;
+                nextIndex++; // Pular o parêntese esquerdo
+            }
+            
+            // Obter o identificador
+            if (nextIndex < tokens.size() && tokens[nextIndex].type == ExpressionTokenType::IDENTIFIER) {
+                std::string macroName = tokens[nextIndex].value;
+                bool isDefined = macroProcessor->isDefined(macroName);
+                
+                // Criar token numérico com o resultado
+                ExpressionToken resultToken;
+                resultToken.type = ExpressionTokenType::NUMBER;
+                resultToken.value = isDefined ? "1" : "0";
+                resultToken.numericValue = isDefined ? 1 : 0;
+                result.push_back(resultToken);
+                
+                // Avançar o índice
+                i = nextIndex;
+                if (hasParens) {
+                    // Pular o parêntese direito se existir
+                    if (i + 1 < tokens.size() && tokens[i + 1].type == ExpressionTokenType::RIGHT_PAREN) {
+                        i++;
+                    }
+                }
+            } else {
+                // Erro: defined sem identificador válido
+                result.push_back(tokens[i]);
+            }
+        } else {
+            result.push_back(tokens[i]);
+        }
+    }
+    
+    // Aplicar Shunting Yard ao resultado processado
+    return handleOperatorPrecedence(result);
 }
 
 long long ExpressionEvaluator::evaluateSubexpression(const std::vector<ExpressionToken>& tokens, size_t start, size_t end) {
@@ -266,17 +328,34 @@ long long ExpressionEvaluator::evaluateSubexpression(const std::vector<Expressio
             stack.push_back(token.numericValue);
         }
         else if (token.type == ExpressionTokenType::DEFINED) {
-            // Operador defined() - verificar se próximo token é um identificador
-            if (i + 1 < end && tokens[i + 1].type == ExpressionTokenType::IDENTIFIER) {
-                const std::string& macroName = tokens[i + 1].value;
+            // Operador defined() - pode ser defined(identifier) ou defined identifier
+            std::string macroName;
+            bool foundMacro = false;
+            
+            // Verificar se próximo token é parêntese esquerdo
+            if (i + 1 < end && tokens[i + 1].type == ExpressionTokenType::LEFT_PAREN) {
+                // Formato: defined(identifier)
+                if (i + 2 < end && tokens[i + 2].type == ExpressionTokenType::IDENTIFIER &&
+                    i + 3 < end && tokens[i + 3].type == ExpressionTokenType::RIGHT_PAREN) {
+                    macroName = tokens[i + 2].value;
+                    foundMacro = true;
+                    i += 3; // Pular '(', 'identifier', ')'
+                }
+            } else if (i + 1 < end && tokens[i + 1].type == ExpressionTokenType::IDENTIFIER) {
+                // Formato: defined identifier
+                macroName = tokens[i + 1].value;
+                foundMacro = true;
+                ++i; // Pular o identificador
+            }
+            
+            if (foundMacro) {
                 bool isDefined = false;
                 if (macroProcessor != nullptr) {
                     isDefined = macroProcessor->isDefined(macroName);
                 }
                 stack.push_back(isDefined ? 1 : 0);
-                ++i; // Pular o próximo token (identificador)
             } else {
-                // Erro: defined() sem identificador
+                // Erro: defined() sem identificador válido
                 stack.push_back(0);
             }
         }
@@ -445,6 +524,11 @@ std::vector<ExpressionToken> ExpressionEvaluator::handleOperatorPrecedence(const
         
         if (token.type == ExpressionTokenType::NUMBER || token.type == ExpressionTokenType::IDENTIFIER) {
             output.push_back(token);
+        }
+        else if (token.type == ExpressionTokenType::DEFINED) {
+            // O operador defined deve ser tratado como um operador unário especial
+            // que tem alta precedência e deve ser processado imediatamente
+            operatorStack.push_back(token);
         }
         else if (token.type == ExpressionTokenType::OPERATOR) {
             // Verificar se é operador unário
@@ -653,6 +737,12 @@ std::string ExpressionEvaluator::expandMacrosInExpression(const std::string& exp
         return expression;
     }
     
+    // Verificar se a expressão contém operador defined()
+    // Se contém, não expandir macros para preservar a semântica do defined()
+    if (expression.find("defined") != std::string::npos) {
+        return expression;
+    }
+    
     std::string result = expression;
     
     // Tokenizar para encontrar identificadores
@@ -660,9 +750,17 @@ std::string ExpressionEvaluator::expandMacrosInExpression(const std::string& exp
     
     for (const auto& token : tokens) {
          if (token.type == ExpressionTokenType::IDENTIFIER) {
-             // Verificar se é uma macro definida (implementação simplificada)
-             // TODO: Implementar expansão de macros quando MacroProcessor estiver disponível
-             // Por enquanto, manter identificadores como estão
+             // Verificar se é uma macro definida e expandir se necessário
+              if (macroProcessor && macroProcessor->isDefined(token.value)) {
+                  std::string expanded = macroProcessor->expandMacro(token.value);
+                  // Substituir o identificador pela expansão da macro
+                  result += expanded;
+              } else {
+                  // Manter identificador como está se não for uma macro
+                  result += token.value;
+              }
+         } else {
+             result += token.value;
          }
      }
     
@@ -744,8 +842,17 @@ long long ExpressionEvaluator::resolveIdentifierValue(const std::string& identif
         return 0;
     }
     
-    // TODO: Implementar resolução de macros quando MacroProcessor estiver disponível
-     // Por enquanto, identificadores não definidos retornam 0
+    // Verificar se o identificador é uma macro definida
+    if (macroProcessor->isDefined(identifier)) {
+        std::string macroValue = macroProcessor->expandMacro(identifier);
+        // Tentar converter o valor da macro para número
+        try {
+            return convertToNumber(macroValue);
+        } catch (const std::exception&) {
+            // Se não conseguir converter, retorna 0
+            return 0;
+        }
+    }
     
     // Identificador não definido é 0 em expressões de preprocessador
     return 0;

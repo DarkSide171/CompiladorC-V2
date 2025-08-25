@@ -411,15 +411,26 @@ private:
     bool isReservedName(const std::string& name) const;
     
     /**
-     * @brief Substitui parâmetros no corpo da macro
+     * @brief Substitui parâmetros por argumentos no corpo da macro
      * @param body Corpo da macro
-     * @param parameters Nomes dos parâmetros
-     * @param arguments Valores dos argumentos
-     * @return Corpo com substituições
+     * @param parameters Lista de parâmetros
+     * @param arguments Lista de argumentos
+     * @return String com parâmetros substituídos
      */
     std::string substituteParameters(const std::string& body,
                                    const std::vector<std::string>& parameters,
                                    const std::vector<std::string>& arguments);
+    
+    /**
+     * @brief Processa operadores # (stringificação) e ## (concatenação)
+     * @param body Corpo da macro
+     * @param parameters Lista de parâmetros
+     * @param arguments Lista de argumentos
+     * @return String com operadores processados
+     */
+    std::string processStringificationAndConcatenation(const std::string& body,
+                                                      const std::vector<std::string>& parameters,
+                                                      const std::vector<std::string>& arguments);
     
     /**
      * @brief Encontra próxima ocorrência de macro no texto

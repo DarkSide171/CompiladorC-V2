@@ -378,6 +378,11 @@ private:
       * @return Resultado da operação
       */
      long long applyBinaryOperation(long long left, long long right, const std::string& op) const;
+     
+     /**
+      * @brief Pré-processa operadores defined() convertendo-os em valores numéricos
+      */
+      std::vector<ExpressionToken> preprocessDefinedOperators(const std::vector<ExpressionToken>& tokens);
 };
 
 } // namespace Preprocessor

@@ -787,24 +787,154 @@ std::string MacroProcessor::substituteParameters(const std::string& body,
                                                 const std::vector<std::string>& arguments) {
     std::string result = body;
     
-    // Substitui cada parâmetro pelo argumento correspondente
+    // Primeiro passo: processar operadores # (stringificação) e ## (concatenação)
+    result = processStringificationAndConcatenation(result, parameters, arguments);
+    
+    // Segundo passo: substituir parâmetros normais
     for (size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
         const std::string& param = parameters[i];
         const std::string& arg = arguments[i];
         
-        // Usa regex para substituir apenas palavras completas
+        // Usa regex simples para substituir palavras completas
         std::regex paramRegex("\\b" + param + "\\b");
         result = std::regex_replace(result, paramRegex, arg);
     }
     
-    // Trata argumentos variádicos
+    // Terceiro passo: tratar argumentos variádicos
     if (arguments.size() > parameters.size()) {
         std::vector<std::string> variadicArgs(arguments.begin() + parameters.size(), arguments.end());
         std::string variadicExpansion = expandVariadicArguments(variadicArgs);
         
         // Substitui __VA_ARGS__
-        std::regex variadicRegex("__VA_ARGS__");
+        std::regex variadicRegex("\\b__VA_ARGS__\\b");
         result = std::regex_replace(result, variadicRegex, variadicExpansion);
+    }
+    
+    return result;
+}
+
+std::string MacroProcessor::processStringificationAndConcatenation(const std::string& body,
+                                                                  const std::vector<std::string>& parameters,
+                                                                  const std::vector<std::string>& arguments) {
+    std::string result = body;
+    
+    // Processar operador de stringificação (#)
+    for (size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
+        const std::string& param = parameters[i];
+        const std::string& arg = arguments[i];
+        
+        // Escapar caracteres especiais do parâmetro para regex
+        std::string escapedParam = std::regex_replace(param, std::regex("[.^$|()\\[\\]{}*+?]"), "\\$&");
+        
+        // Procurar por #param
+        try {
+            std::regex stringifyRegex("#\\s*" + escapedParam + "\\b");
+            std::string stringifiedArg = handleStringification(arg);
+            result = std::regex_replace(result, stringifyRegex, stringifiedArg);
+        } catch (const std::regex_error&) {
+            // Se a regex falhar, usar busca simples
+            std::string pattern = "# " + param;
+            size_t pos = result.find(pattern);
+            if (pos != std::string::npos) {
+                result.replace(pos, pattern.length(), handleStringification(arg));
+            }
+        }
+    }
+    
+    // Processar stringificação de __VA_ARGS__
+    if (arguments.size() > parameters.size()) {
+        std::vector<std::string> variadicArgs(arguments.begin() + parameters.size(), arguments.end());
+        std::string variadicExpansion = expandVariadicArguments(variadicArgs);
+        
+        try {
+            std::regex stringifyVariadicRegex("#\\s*__VA_ARGS__\\b");
+            std::string stringifiedVariadic = handleStringification(variadicExpansion);
+            result = std::regex_replace(result, stringifyVariadicRegex, stringifiedVariadic);
+        } catch (const std::regex_error&) {
+            // Fallback para busca simples
+            std::string pattern = "#__VA_ARGS__";
+            size_t pos = result.find(pattern);
+            if (pos != std::string::npos) {
+                result.replace(pos, pattern.length(), handleStringification(variadicExpansion));
+            }
+        }
+    }
+    
+    // Processar operador de concatenação (##)
+    for (size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
+        const std::string& param = parameters[i];
+        const std::string& arg = arguments[i];
+        
+        // Escapar caracteres especiais do parâmetro para regex
+        std::string escapedParam = std::regex_replace(param, std::regex("[.^$|()\\[\\]{}*+?]"), "\\$&");
+        
+        try {
+            // Procurar por token##param ou param##token
+            std::regex concatLeftRegex("(\\w+)\\s*##\\s*" + escapedParam + "\\b");
+            std::regex concatRightRegex("\\b" + escapedParam + "\\s*##\\s*(\\w+)");
+            
+            // Substituir usando busca manual para evitar problemas com lambdas
+            std::smatch match;
+            if (std::regex_search(result, match, concatLeftRegex)) {
+                std::string replacement = handleConcatenation(match[1].str(), arg);
+                result = std::regex_replace(result, concatLeftRegex, replacement);
+            }
+            
+            if (std::regex_search(result, match, concatRightRegex)) {
+                std::string replacement = handleConcatenation(arg, match[1].str());
+                result = std::regex_replace(result, concatRightRegex, replacement);
+            }
+        } catch (const std::regex_error&) {
+            // Fallback para busca simples
+            std::string leftPattern = param + "##";
+            std::string rightPattern = "##" + param;
+            
+            size_t pos = result.find(leftPattern);
+            if (pos != std::string::npos) {
+                result.replace(pos, leftPattern.length(), arg);
+            }
+            
+            pos = result.find(rightPattern);
+            if (pos != std::string::npos) {
+                result.replace(pos, rightPattern.length(), arg);
+            }
+        }
+    }
+    
+    // Processar concatenação com __VA_ARGS__
+    if (arguments.size() > parameters.size()) {
+        std::vector<std::string> variadicArgs(arguments.begin() + parameters.size(), arguments.end());
+        std::string variadicExpansion = expandVariadicArguments(variadicArgs);
+        
+        try {
+            std::regex concatVariadicLeftRegex("(\\w+)\\s*##\\s*__VA_ARGS__\\b");
+            std::regex concatVariadicRightRegex("\\b__VA_ARGS__\\s*##\\s*(\\w+)");
+            
+            std::smatch match;
+            if (std::regex_search(result, match, concatVariadicLeftRegex)) {
+                std::string replacement = handleConcatenation(match[1].str(), variadicExpansion);
+                result = std::regex_replace(result, concatVariadicLeftRegex, replacement);
+            }
+            
+            if (std::regex_search(result, match, concatVariadicRightRegex)) {
+                std::string replacement = handleConcatenation(variadicExpansion, match[1].str());
+                result = std::regex_replace(result, concatVariadicRightRegex, replacement);
+            }
+        } catch (const std::regex_error&) {
+            // Fallback para busca simples
+            std::string leftPattern = "__VA_ARGS__##";
+            std::string rightPattern = "##__VA_ARGS__";
+            
+            size_t pos = result.find(leftPattern);
+            if (pos != std::string::npos) {
+                result.replace(pos, leftPattern.length(), variadicExpansion);
+            }
+            
+            pos = result.find(rightPattern);
+            if (pos != std::string::npos) {
+                result.replace(pos, rightPattern.length(), variadicExpansion);
+            }
+        }
     }
     
     return result;

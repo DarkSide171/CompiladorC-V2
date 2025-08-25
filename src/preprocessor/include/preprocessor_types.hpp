@@ -26,7 +26,7 @@ struct PreprocessorPosition {
      * @brief Construtor padrão
      */
     PreprocessorPosition() 
-        : line(0), column(0), original_line(0), original_column(0), 
+        : line(1), column(1), original_line(0), original_column(0), 
           expanded_line(0), expanded_column(0), offset(0) {}
     
     /**

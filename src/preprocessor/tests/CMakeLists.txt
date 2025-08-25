@@ -40,8 +40,12 @@ add_executable(test_expression_evaluator
     unit/test_expression_evaluator.cpp
 )
 
+add_executable(test_expression_macro_integration
+    unit/test_expression_macro_integration.cpp
+)
+
 # Configurar linkage e includes para todos os testes unitários
-set(UNIT_TESTS test_file_manager test_config test_directive test_logger test_macro_processor test_state test_preprocessor test_expression_evaluator)
+set(UNIT_TESTS test_file_manager test_config test_directive test_logger test_macro_processor test_state test_preprocessor test_expression_evaluator test_expression_macro_integration)
 
 foreach(TEST_TARGET ${UNIT_TESTS})
     target_link_libraries(${TEST_TARGET}

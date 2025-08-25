@@ -843,24 +843,20 @@ std::string FileManager::normalizeFilePath(const std::string& filepath) const {
     if (filepath.empty()) {
         return "";
     }
-    
-    if (filepath.empty()) {
-         return "";
-     }
      
-     // Fallback para normalização manual básica
-      std::string normalized = filepath;
+    // Fallback para normalização manual básica
+    std::string normalized = filepath;
       
-      // Substitui barras invertidas por barras normais
-      std::replace(normalized.begin(), normalized.end(), '\\', '/');
+    // Substitui barras invertidas por barras normais
+    std::replace(normalized.begin(), normalized.end(), '\\', '/');
       
-      // Remove barras duplas
-      size_t pos = 0;
-      while ((pos = normalized.find("//", pos)) != std::string::npos) {
-          normalized.replace(pos, 2, "/");
-      }
+    // Remove barras duplas
+    size_t pos = 0;
+    while ((pos = normalized.find("//", pos)) != std::string::npos) {
+        normalized.replace(pos, 2, "/");
+    }
       
-      return normalized;
+    return normalized;
 }
 
 void FileManager::updateDependencies(const std::string& filepath) {
