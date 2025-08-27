@@ -47,15 +47,33 @@ struct FileStats {
 struct CachedFile {
     std::string content;                           // Conteúdo do arquivo
     std::chrono::system_clock::time_point timestamp; // Timestamp de cache
+    std::chrono::system_clock::time_point last_modified; // Última modificação do arquivo
     size_t file_size;                             // Tamanho do arquivo
     std::string normalized_path;                  // Caminho normalizado
+    std::string file_hash;                        // Hash do conteúdo para validação
     bool is_system_file;                         // Se é arquivo de sistema
+    size_t access_count;                         // Contador de acessos
+    std::chrono::system_clock::time_point last_access; // Último acesso
     
-    CachedFile() : file_size(0), is_system_file(false) {}
+    CachedFile() : file_size(0), is_system_file(false), access_count(0) {}
     
     CachedFile(const std::string& content, size_t size, bool system_file = false)
-        : content(content), file_size(size), is_system_file(system_file),
-          timestamp(std::chrono::system_clock::now()) {}
+        : content(content), timestamp(std::chrono::system_clock::now()),
+          file_size(size), is_system_file(system_file),
+          last_access(std::chrono::system_clock::now()),
+          access_count(1) {}
+    
+    // Verifica se o cache expirou (TTL)
+    bool isExpired(std::chrono::seconds ttl = std::chrono::seconds(300)) const {
+        auto now = std::chrono::system_clock::now();
+        return (now - timestamp) > ttl;
+    }
+    
+    // Atualiza estatísticas de acesso
+    void updateAccess() {
+        last_access = std::chrono::system_clock::now();
+        access_count++;
+    }
 };
 
 /**
@@ -70,8 +88,8 @@ struct FileDependency {
     FileDependency() : is_circular(false) {}
     
     FileDependency(const std::string& path) 
-        : filepath(path), is_circular(false),
-          last_modified(std::chrono::system_clock::now()) {}
+        : filepath(path), last_modified(std::chrono::system_clock::now()),
+          is_circular(false) {}
 };
 
 // ============================================================================
@@ -211,6 +229,29 @@ public:
      */
     void clearCache();
     
+    /**
+     * @brief Configura parâmetros de cache otimizado
+     * @param max_size Tamanho máximo do cache em bytes
+     * @param max_entries Número máximo de entradas
+     * @param ttl TTL do cache em segundos
+     * @param enable_compression Habilitar compressão
+     */
+    void configureCacheOptimization(size_t max_size = 50 * 1024 * 1024, // 50MB
+                                   size_t max_entries = 1000,
+                                   std::chrono::seconds ttl = std::chrono::seconds(300),
+                                   bool enable_compression = false);
+    
+    /**
+     * @brief Limpa cache expirado e otimiza memória
+     */
+    void optimizeCache();
+    
+    /**
+     * @brief Pré-carrega arquivos frequentemente usados
+     * @param filepaths Lista de arquivos para pré-carregar
+     */
+    void preloadFiles(const std::vector<std::string>& filepaths);
+    
     // ========================================================================
     // GERENCIAMENTO DE DEPENDÊNCIAS
     // ========================================================================
@@ -345,9 +386,15 @@ public:
     /**
      * @brief Manipula eventos do sistema de arquivos
      * @param event_type Tipo do evento
-     * @param filepath Caminho do arquivo afetado
+     * @param filepath Caminho do arquivo
      */
     void handleFileSystemEvents(const std::string& event_type, const std::string& filepath);
+    
+    /**
+     * @brief Define um manipulador de erros externo
+     * @param errorHandler Ponteiro para o manipulador de erros
+     */
+    void setErrorHandler(void* errorHandler);
 
 private:
     // ========================================================================
@@ -361,10 +408,19 @@ private:
     PreprocessorLogger* logger_;                         // Logger
     mutable FileStats stats_;                           // Estatísticas
     
-    // Estruturas para novos recursos
+    // Configurações de cache otimizado
+    size_t max_cache_size_;                             // Tamanho máximo do cache (bytes)
+    size_t max_cache_entries_;                          // Número máximo de entradas
+    std::chrono::seconds cache_ttl_;                    // TTL do cache
+    bool enable_cache_compression_;                     // Compressão de cache
+    
+    // Arquivos e monitoramento
     std::unordered_set<std::string> locked_files_;           // Arquivos bloqueados
     std::unordered_map<std::string, std::string> file_hashes_; // Cache de hashes
     std::unordered_set<std::string> monitored_files_;        // Arquivos monitorados
+    
+    // Tratamento de erros externo
+    void* external_error_handler_;                           // Manipulador de erros externo
     
     // ========================================================================
     // MÉTODOS AUXILIARES PRIVADOS
@@ -389,11 +445,32 @@ private:
                                    const std::string& base_path) const;
     
     /**
-     * @brief Armazena arquivo no cache
+     * @brief Armazena arquivo no cache com otimizações
      * @param filepath Caminho do arquivo
      * @param content Conteúdo do arquivo
+     * @param file_modified Timestamp de modificação do arquivo
      */
-    void cacheFile(const std::string& filepath, const std::string& content);
+    void cacheFile(const std::string& filepath, const std::string& content,
+                   std::chrono::system_clock::time_point file_modified = std::chrono::system_clock::now());
+    
+    /**
+     * @brief Verifica se o cache precisa ser invalidado
+     * @param filepath Caminho do arquivo
+     * @return true se precisa invalidar
+     */
+    bool shouldInvalidateCache(const std::string& filepath) const;
+    
+    /**
+     * @brief Remove entradas menos usadas do cache (LRU)
+     * @param target_size Tamanho alvo após limpeza
+     */
+    void evictLeastRecentlyUsed(size_t target_size);
+    
+    /**
+     * @brief Calcula tamanho atual do cache em bytes
+     * @return Tamanho do cache
+     */
+    size_t getCurrentCacheSize() const;
     
     /**
      * @brief Recupera arquivo do cache

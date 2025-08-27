@@ -180,6 +180,7 @@ private:
     MacroProcessor* macro_processor_;       ///< Processador de macros
     FileManager* file_manager_;             ///< Gerenciador de arquivos
     ConditionalProcessor* conditional_processor_; ///< Processador condicional
+    void* external_error_handler_;          ///< ErrorHandler externo
     
 public:
     /**
@@ -330,6 +331,12 @@ public:
      * @return true se processado com sucesso, false caso contrário
      */
     bool processLineDirective(const std::string& line_info, const PreprocessorPosition& pos);
+    
+    /**
+     * @brief Define um errorHandler externo para reportar erros
+     * @param errorHandler Ponteiro para o errorHandler
+     */
+    void setErrorHandler(void* errorHandler);
     
     // Métodos de tratamento de erros
     

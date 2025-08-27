@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include "preprocessor_types.hpp"
 #include "preprocessor_config.hpp"
 #include "preprocessor_state.hpp"
@@ -97,6 +98,12 @@ public:
     bool isMacroDefined(const std::string& name) const;
     
     /**
+     * @brief Obtém lista de macros definidas
+     * @return Mapa com nomes e valores das macros definidas
+     */
+    std::unordered_map<std::string, std::string> getDefinedMacros() const;
+    
+    /**
      * @brief Configura versão do padrão C
      * @param version Versão do padrão C
      */
@@ -107,6 +114,12 @@ public:
      * @return Estrutura com estatísticas
      */
     PreprocessorState getStatistics() const;
+    
+    /**
+     * @brief Define um errorHandler externo para reportar erros
+     * @param errorHandler Ponteiro para o errorHandler
+     */
+    void setErrorHandler(void* errorHandler);
 
 private:
     // Métodos internos de controle
@@ -276,6 +289,9 @@ private:
     bool processing_active_;
     std::string current_file_;
     int current_line_;
+    
+    // ErrorHandler externo
+    void* external_error_handler_;
     
     // Estatísticas
     PreprocessorState stats_;

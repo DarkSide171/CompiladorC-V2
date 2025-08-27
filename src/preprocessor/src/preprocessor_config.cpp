@@ -430,7 +430,7 @@ void PreprocessorConfig::initializeVersionFeatures(CVersion version) {
             break;
             
         case CVersion::C17:
-            // C17 mantém as mesmas features do C11
+            // C17 mantém as mesmas features do C11 e adiciona inline functions
             version_features_.supports_variadic_macros = true;
             version_features_.supports_pragma_once = true;
             version_features_.supports_generic_selection = true;
@@ -438,6 +438,7 @@ void PreprocessorConfig::initializeVersionFeatures(CVersion version) {
             version_features_.supports_alignof = true;
             version_features_.supports_thread_local = true;
             version_features_.supports_unicode_literals = true;
+            version_features_.supports_inline_functions = true;
             break;
             
         case CVersion::C23:
@@ -449,6 +450,7 @@ void PreprocessorConfig::initializeVersionFeatures(CVersion version) {
             version_features_.supports_alignof = true;
             version_features_.supports_thread_local = true;
             version_features_.supports_unicode_literals = true;
+            version_features_.supports_inline_functions = true;
             version_features_.supports_typeof = true;
             version_features_.supports_decimal_floats = true;
             break;
@@ -558,6 +560,7 @@ bool versionSupportsFeature(CVersion version, const std::string& feature) {
     if (feature == "alignof") return features.supports_alignof;
     if (feature == "thread_local") return features.supports_thread_local;
     if (feature == "unicode_literals") return features.supports_unicode_literals;
+    if (feature == "inline_functions") return features.supports_inline_functions;
     if (feature == "typeof") return features.supports_typeof;
     if (feature == "decimal_floats") return features.supports_decimal_floats;
     

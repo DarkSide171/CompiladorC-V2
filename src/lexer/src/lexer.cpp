@@ -7,7 +7,7 @@
 
 namespace Lexer {
 
-// Implementação do construtor
+// Implementação do construtor para arquivo
 LexerMain::LexerMain(const std::string& filename, ErrorHandler* errorHandler)
     : currentState(LexerState::START)
     , currentLine(1)
@@ -16,6 +16,7 @@ LexerMain::LexerMain(const std::string& filename, ErrorHandler* errorHandler)
     , endOfFile(false)
     , hasCachedToken(false)
     , cachedToken(TokenType::UNKNOWN, "", {0, 0, 0})
+    , inputStream(nullptr)
 {
     // Validar parâmetros
     if (filename.empty()) {
@@ -37,6 +38,33 @@ LexerMain::LexerMain(const std::string& filename, ErrorHandler* errorHandler)
     config = std::make_unique<LexerConfig>();
     logger = std::make_unique<LexerLogger>();
     buffer = std::make_unique<LookaheadBuffer>(*sourceFile);
+    symbolTable = std::make_unique<SymbolTable>(config.get());
+    
+    // Log de inicialização
+    logger->logStateTransition("INIT", "START");
+}
+
+// Implementação do construtor para stream
+LexerMain::LexerMain(std::istream& inputStream, ErrorHandler* errorHandler, const std::string& sourceName)
+    : currentState(LexerState::START)
+    , currentLine(1)
+    , currentColumn(1)
+    , currentPosition(0)
+    , endOfFile(false)
+    , hasCachedToken(false)
+    , cachedToken(TokenType::UNKNOWN, "", {0, 0, 0})
+    , inputStream(&inputStream)
+{
+    // Validar parâmetros
+    if (errorHandler == nullptr) {
+        throw std::invalid_argument("ErrorHandler não pode ser nulo");
+    }
+    
+    // Inicializar componentes
+    this->errorHandler = errorHandler; // Não tomar posse do ponteiro
+    config = std::make_unique<LexerConfig>();
+    logger = std::make_unique<LexerLogger>();
+    buffer = std::make_unique<LookaheadBuffer>(inputStream);
     symbolTable = std::make_unique<SymbolTable>(config.get());
     
     // Log de inicialização

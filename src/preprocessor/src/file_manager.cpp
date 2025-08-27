@@ -19,7 +19,12 @@ namespace Preprocessor {
 // ============================================================================
 
 FileManager::FileManager(const std::vector<std::string>& search_paths, PreprocessorLogger* logger)
-    : search_paths_(search_paths), logger_(logger) {
+    : search_paths_(search_paths), logger_(logger),
+      max_cache_size_(50 * 1024 * 1024), // 50MB padrão
+      max_cache_entries_(1000),
+      cache_ttl_(std::chrono::seconds(300)), // 5 minutos
+      enable_cache_compression_(false),
+      external_error_handler_(nullptr) {
     // Normaliza os caminhos de busca
     for (auto& path : search_paths_) {
         path = normalizeFilePath(path);
@@ -27,6 +32,9 @@ FileManager::FileManager(const std::vector<std::string>& search_paths, Preproces
     
     if (logger_) {
         logInfo("FileManager inicializado com " + std::to_string(search_paths_.size()) + " caminhos de busca");
+        logInfo("Cache configurado: " + std::to_string(max_cache_size_ / (1024*1024)) + "MB, " + 
+                std::to_string(max_cache_entries_) + " entradas, TTL: " + 
+                std::to_string(cache_ttl_.count()) + "s");
     }
 }
 
@@ -44,7 +52,12 @@ FileManager::FileManager(FileManager&& other) noexcept
       dependencies_(std::move(other.dependencies_)),
       circular_detection_set_(std::move(other.circular_detection_set_)),
       logger_(other.logger_),
-      stats_(other.stats_) {
+      stats_(other.stats_),
+      max_cache_size_(other.max_cache_size_),
+      max_cache_entries_(other.max_cache_entries_),
+      cache_ttl_(other.cache_ttl_),
+      enable_cache_compression_(other.enable_cache_compression_),
+      external_error_handler_(other.external_error_handler_) {
     other.logger_ = nullptr;
     other.stats_.reset();
 }
@@ -797,14 +810,31 @@ std::string FileManager::resolveRelativePath(const std::string& filename,
       return result;
 }
 
-void FileManager::cacheFile(const std::string& filepath, const std::string& content) {
+void FileManager::cacheFile(const std::string& filepath, const std::string& content,
+                           std::chrono::system_clock::time_point file_modified) {
     std::string normalized_path = normalizeFilePath(filepath);
+    
+    // Verifica se precisa otimizar cache antes de adicionar
+    if (file_cache_.size() >= max_cache_entries_ || getCurrentCacheSize() >= max_cache_size_) {
+        optimizeCache();
+    }
     
     CachedFile cached_file(content, content.size());
     cached_file.normalized_path = normalized_path;
+    cached_file.last_modified = file_modified;
+    
+    // Calcula hash se necessário
+    if (!cached_file.file_hash.empty() || enable_cache_compression_) {
+        cached_file.file_hash = calculateFileHash(filepath);
+    }
     
     file_cache_[normalized_path] = std::move(cached_file);
     stats_.files_cached++;
+    
+    if (logger_) {
+        logInfo("Arquivo cacheado: " + normalized_path + " (" + 
+                std::to_string(content.size()) + " bytes)");
+    }
 }
 
 const CachedFile* FileManager::getCachedFile(const std::string& filepath) const {
@@ -812,6 +842,24 @@ const CachedFile* FileManager::getCachedFile(const std::string& filepath) const 
     
     auto it = file_cache_.find(normalized_path);
     if (it != file_cache_.end()) {
+        // Verifica se o cache expirou
+        if (it->second.isExpired(cache_ttl_)) {
+            if (logger_) {
+                logInfo("Cache expirado para: " + normalized_path);
+            }
+            return nullptr;
+        }
+        
+        // Verifica se o arquivo foi modificado
+        if (shouldInvalidateCache(normalized_path)) {
+            if (logger_) {
+                logInfo("Cache invalidado (arquivo modificado): " + normalized_path);
+            }
+            return nullptr;
+        }
+        
+        // Atualiza estatísticas de acesso
+        const_cast<CachedFile&>(it->second).updateAccess();
         return &it->second;
     }
     
@@ -900,6 +948,127 @@ void FileManager::logInfo(const std::string& message, const std::string& filepat
             logger_->info(message + " [" + filepath + "]");
         }
     }
+}
+
+// ============================================================================
+// MÉTODOS DE OTIMIZAÇÃO DE CACHE
+// ============================================================================
+
+void FileManager::configureCacheOptimization(size_t max_size, size_t max_entries,
+                                            std::chrono::seconds ttl, bool enable_compression) {
+    max_cache_size_ = max_size;
+    max_cache_entries_ = max_entries;
+    cache_ttl_ = ttl;
+    enable_cache_compression_ = enable_compression;
+    
+    if (logger_) {
+        logInfo("Cache reconfigurado: " + std::to_string(max_size / (1024*1024)) + "MB, " + 
+                std::to_string(max_entries) + " entradas, TTL: " + std::to_string(ttl.count()) + "s");
+    }
+    
+    // Otimiza cache com novas configurações
+    optimizeCache();
+}
+
+void FileManager::optimizeCache() {
+    size_t initial_size = file_cache_.size();
+    size_t initial_memory = getCurrentCacheSize();
+    
+    // Remove entradas expiradas
+    auto it = file_cache_.begin();
+    while (it != file_cache_.end()) {
+        if (it->second.isExpired(cache_ttl_) || shouldInvalidateCache(it->first)) {
+            it = file_cache_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    
+    // Se ainda excede limites, remove entradas menos usadas
+    if (file_cache_.size() > max_cache_entries_ || getCurrentCacheSize() > max_cache_size_) {
+        evictLeastRecentlyUsed(max_cache_entries_ * 0.8); // Remove 20% das entradas
+    }
+    
+    size_t final_size = file_cache_.size();
+    size_t final_memory = getCurrentCacheSize();
+    
+    if (logger_ && (initial_size != final_size)) {
+        logInfo("Cache otimizado: " + std::to_string(initial_size) + " -> " + 
+                std::to_string(final_size) + " entradas, " + 
+                std::to_string(initial_memory / 1024) + " -> " + 
+                std::to_string(final_memory / 1024) + " KB");
+    }
+}
+
+void FileManager::preloadFiles(const std::vector<std::string>& filepaths) {
+    for (const auto& filepath : filepaths) {
+        try {
+            if (fileExists(filepath) && !getCachedFile(filepath)) {
+                std::string content = readFile(filepath);
+                auto last_modified = getLastModified(filepath);
+                cacheFile(filepath, content, last_modified);
+                
+                if (logger_) {
+                    logInfo("Arquivo pré-carregado: " + filepath);
+                }
+            }
+        } catch (const std::exception& e) {
+            if (logger_) {
+                logWarning("Falha ao pré-carregar arquivo: " + filepath + " - " + e.what());
+            }
+        }
+    }
+}
+
+bool FileManager::shouldInvalidateCache(const std::string& filepath) const {
+    auto it = file_cache_.find(normalizeFilePath(filepath));
+    if (it == file_cache_.end()) {
+        return false;
+    }
+    
+    try {
+        auto current_modified = getLastModified(filepath);
+        return current_modified > it->second.last_modified;
+    } catch (const std::exception&) {
+        // Se não conseguir verificar, assume que deve invalidar
+        return true;
+    }
+}
+
+void FileManager::evictLeastRecentlyUsed(size_t target_size) {
+    if (file_cache_.size() <= target_size) {
+        return;
+    }
+    
+    // Cria vetor com entradas ordenadas por último acesso
+    std::vector<std::pair<std::chrono::system_clock::time_point, std::string>> entries;
+    for (const auto& pair : file_cache_) {
+        entries.emplace_back(pair.second.last_access, pair.first);
+    }
+    
+    // Ordena por último acesso (mais antigos primeiro)
+    std::sort(entries.begin(), entries.end());
+    
+    // Remove entradas mais antigas até atingir tamanho alvo
+    size_t to_remove = file_cache_.size() - target_size;
+    for (size_t i = 0; i < to_remove && i < entries.size(); ++i) {
+        file_cache_.erase(entries[i].second);
+    }
+}
+
+size_t FileManager::getCurrentCacheSize() const {
+    size_t total_size = 0;
+    for (const auto& pair : file_cache_) {
+        total_size += pair.second.content.size();
+        total_size += pair.second.normalized_path.size();
+        total_size += pair.second.file_hash.size();
+        total_size += sizeof(CachedFile); // Overhead da estrutura
+    }
+    return total_size;
+}
+
+void FileManager::setErrorHandler(void* errorHandler) {
+    external_error_handler_ = errorHandler;
 }
 
 } // namespace Preprocessor

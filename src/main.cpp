@@ -4,6 +4,8 @@
 #include "lexer/include/lexer.hpp"
 #include "lexer/include/error_handler.hpp"
 #include "lexer/include/token.hpp"
+#include "lexer_preprocessor_bridge.hpp"
+#include "preprocessor/include/preprocessor.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,14 +16,16 @@
 #include <map>
 #include <cstring>
 #include <sstream>
+#include <algorithm>
 
 using namespace Lexer;
 
 // Enumeração para tipos de saída
 enum class OutputFormat {
-    VERBOSE,  // Saída detalhada com cores (padrão)
-    SUMMARY,  // Saída resumida apenas com estatísticas
-    JSON      // Saída em formato JSON
+    VERBOSE,    // Saída detalhada com cores (padrão)
+    SUMMARY,    // Saída resumida apenas com estatísticas
+    JSON,       // Saída em formato JSON
+    SEQUENTIAL  // Saída sequencial sem agrupamento por categoria
 };
 
 // Estrutura para filtros de tokens
@@ -93,6 +97,8 @@ std::string getTokenCategory(TokenType type) {
     return "Outros";
 }
 
+
+
 // Função para escapar strings JSON
 std::string escapeJsonString(const std::string& str) {
     std::string escaped;
@@ -109,6 +115,206 @@ std::string escapeJsonString(const std::string& str) {
         }
     }
     return escaped;
+}
+
+// Função para exibir informações resumidas do pré-processador
+void printPreprocessorSummary(const Integration::LexerPreprocessorBridge& bridge) {
+    auto includedFiles = bridge.getIncludedFiles();
+    auto definedMacros = bridge.getDefinedMacros();
+    auto errors = bridge.getErrorMessages();
+    auto warnings = bridge.getWarningMessages();
+    
+    std::cout << Colors::BOLD << Colors::BLUE << "\n📋 Pré-processamento: " << Colors::RESET;
+    if (bridge.hasErrors()) {
+        std::cout << Colors::RED << "❌ Erro" << Colors::RESET;
+    } else {
+        std::cout << Colors::GREEN << "✅ Concluído" << Colors::RESET;
+    }
+    std::cout << " (" << includedFiles.size() << " arquivos, " 
+              << definedMacros.size() << " macros)" << std::endl;
+    
+    if (!errors.empty()) {
+        std::cout << "   ❌ Erros: " << Colors::RED << errors.size() << Colors::RESET << std::endl;
+        for (size_t i = 0; i < std::min(errors.size(), size_t(2)); ++i) {
+            std::string errorMsg = errors[i];
+            if (errorMsg.length() > 60) {
+                errorMsg = errorMsg.substr(0, 57) + "...";
+            }
+            std::cout << "      • " << Colors::RED << errorMsg << Colors::RESET << std::endl;
+        }
+        if (errors.size() > 2) {
+            std::cout << "      ... e mais " << Colors::YELLOW << (errors.size() - 2) << Colors::RESET << " erro(s)" << std::endl;
+        }
+    }
+    
+    if (!warnings.empty()) {
+        std::cout << "   ⚠️  Avisos: " << Colors::YELLOW << warnings.size() << Colors::RESET << std::endl;
+        for (size_t i = 0; i < std::min(warnings.size(), size_t(2)); ++i) {
+            std::string warningMsg = warnings[i];
+            if (warningMsg.length() > 60) {
+                warningMsg = warningMsg.substr(0, 57) + "...";
+            }
+            std::cout << "      • " << Colors::YELLOW << warningMsg << Colors::RESET << std::endl;
+        }
+        if (warnings.size() > 2) {
+            std::cout << "      ... e mais " << Colors::YELLOW << (warnings.size() - 2) << Colors::RESET << " aviso(s)" << std::endl;
+        }
+    }
+}
+
+// Função para exibir informações detalhadas do pré-processador
+void printPreprocessorInfo(const Integration::LexerPreprocessorBridge& bridge) {
+    auto stats = bridge.getStatistics();
+    auto includedFiles = bridge.getIncludedFiles();
+    auto definedMacros = bridge.getDefinedMacros();
+    auto errors = bridge.getErrorMessages();
+    auto warnings = bridge.getWarningMessages();
+    
+    std::cout << Colors::BOLD << Colors::BLUE << "\n╔══════════════════════════════════════════════════════════════╗" << Colors::RESET << std::endl;
+    std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << " 📋 INFORMAÇÕES DO PRÉ-PROCESSADOR" << std::string(26, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+    std::cout << Colors::BOLD << Colors::BLUE << "╠══════════════════════════════════════════════════════════════╣" << Colors::RESET << std::endl;
+    
+    // Status geral
+    std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << " Status: ";
+    if (bridge.hasErrors()) {
+        std::cout << Colors::RED << "❌ Erro durante o processamento" << Colors::RESET;
+    } else {
+        std::cout << Colors::GREEN << "✅ Processamento concluído com sucesso" << Colors::RESET;
+    }
+    std::cout << std::string(20, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+    
+    // Estatísticas
+    std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << " Estatísticas:" << std::string(47, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+    std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   • Arquivos incluídos: " << Colors::YELLOW << includedFiles.size() << Colors::RESET;
+    std::cout << std::string(33, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+    
+    std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   • Macros definidas: " << Colors::YELLOW << definedMacros.size() << Colors::RESET;
+    std::cout << std::string(35, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+    
+    // Arquivos incluídos
+    if (!includedFiles.empty()) {
+        std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << " Arquivos incluídos:" << std::string(41, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        for (size_t i = 0; i < std::min(includedFiles.size(), size_t(5)); ++i) {
+            std::string filename = includedFiles[i];
+            if (filename.length() > 55) {
+                filename = "..." + filename.substr(filename.length() - 52);
+            }
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   📄 " << Colors::CYAN << filename << Colors::RESET;
+            std::cout << std::string(55 - filename.length(), ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+        if (includedFiles.size() > 5) {
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   ... e mais " << Colors::YELLOW << (includedFiles.size() - 5) << Colors::RESET << " arquivo(s)";
+            std::cout << std::string(32, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+    }
+    
+    // Macros definidas
+    if (!definedMacros.empty()) {
+        std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << " Macros definidas:" << std::string(43, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        for (size_t i = 0; i < std::min(definedMacros.size(), size_t(5)); ++i) {
+            std::string macroName = definedMacros[i];
+            if (macroName.length() > 55) {
+                macroName = macroName.substr(0, 52) + "...";
+            }
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   🔧 " << Colors::MAGENTA << macroName << Colors::RESET;
+            std::cout << std::string(55 - macroName.length(), ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+        if (definedMacros.size() > 5) {
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   ... e mais " << Colors::YELLOW << (definedMacros.size() - 5) << Colors::RESET << " macro(s)";
+            std::cout << std::string(34, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+    }
+    
+    // Erros do pré-processador
+    if (!errors.empty()) {
+        std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << " Erros encontrados:" << std::string(42, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        for (size_t i = 0; i < std::min(errors.size(), size_t(3)); ++i) {
+            std::string errorMsg = errors[i];
+            if (errorMsg.length() > 55) {
+                errorMsg = errorMsg.substr(0, 52) + "...";
+            }
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   ❌ " << Colors::RED << errorMsg << Colors::RESET;
+            std::cout << std::string(55 - errorMsg.length(), ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+        if (errors.size() > 3) {
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   ... e mais " << Colors::YELLOW << (errors.size() - 3) << Colors::RESET << " erro(s)";
+            std::cout << std::string(36, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+    }
+    
+    // Avisos do pré-processador
+    if (!warnings.empty()) {
+        std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << " Avisos encontrados:" << std::string(41, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        for (size_t i = 0; i < std::min(warnings.size(), size_t(3)); ++i) {
+            std::string warningMsg = warnings[i];
+            if (warningMsg.length() > 55) {
+                warningMsg = warningMsg.substr(0, 52) + "...";
+            }
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   ⚠️  " << Colors::YELLOW << warningMsg << Colors::RESET;
+            std::cout << std::string(54 - warningMsg.length(), ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+        if (warnings.size() > 3) {
+            std::cout << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << "   ... e mais " << Colors::YELLOW << (warnings.size() - 3) << Colors::RESET << " aviso(s)";
+            std::cout << std::string(35, ' ') << Colors::BOLD << Colors::BLUE << "║" << Colors::RESET << std::endl;
+        }
+    }
+    
+    std::cout << Colors::BOLD << Colors::BLUE << "╚══════════════════════════════════════════════════════════════╝" << Colors::RESET << std::endl;
+}
+
+// Função para exibir informações do pré-processador em formato JSON
+void printPreprocessorInfoJson(const Integration::LexerPreprocessorBridge& bridge) {
+    const auto& result = bridge.getLastProcessingResult();
+    auto stats = bridge.getStatistics();
+    auto includedFiles = bridge.getIncludedFiles();
+    auto definedMacros = bridge.getDefinedMacros();
+    auto errors = bridge.getErrorMessages();
+    auto warnings = bridge.getWarningMessages();
+    
+    std::cout << ",\n  \"preprocessor\": {" << std::endl;
+    std::cout << "    \"status\": \"" << (bridge.hasErrors() ? "error" : "success") << "\"," << std::endl;
+    std::cout << "    \"statistics\": {" << std::endl;
+    std::cout << "      \"files_included\": " << includedFiles.size() << "," << std::endl;
+    std::cout << "      \"macros_defined\": " << definedMacros.size() << "," << std::endl;
+    if (stats.find("position_mappings") != stats.end()) {
+        std::cout << "      \"position_mappings\": " << stats["position_mappings"] << "," << std::endl;
+    }
+    std::cout << "      \"errors\": " << errors.size() << "," << std::endl;
+    std::cout << "      \"warnings\": " << warnings.size() << std::endl;
+    std::cout << "    }," << std::endl;
+    
+    std::cout << "    \"included_files\": [" << std::endl;
+    for (size_t i = 0; i < includedFiles.size(); ++i) {
+        std::cout << "      \"" << escapeJsonString(includedFiles[i]) << "\"";
+        if (i < includedFiles.size() - 1) std::cout << ",";
+        std::cout << std::endl;
+    }
+    std::cout << "    ]," << std::endl;
+    
+    std::cout << "    \"defined_macros\": [" << std::endl;
+    for (size_t i = 0; i < definedMacros.size(); ++i) {
+        std::cout << "      \"" << escapeJsonString(definedMacros[i]) << "\"";
+        if (i < definedMacros.size() - 1) std::cout << ",";
+        std::cout << std::endl;
+    }
+    std::cout << "    ]," << std::endl;
+    
+    std::cout << "    \"errors\": [" << std::endl;
+    for (size_t i = 0; i < errors.size(); ++i) {
+        std::cout << "      \"" << escapeJsonString(errors[i]) << "\"";
+        if (i < errors.size() - 1) std::cout << ",";
+        std::cout << std::endl;
+    }
+    std::cout << "    ]," << std::endl;
+    
+    std::cout << "    \"warnings\": [" << std::endl;
+    for (size_t i = 0; i < warnings.size(); ++i) {
+        std::cout << "      \"" << escapeJsonString(warnings[i]) << "\"";
+        if (i < warnings.size() - 1) std::cout << ",";
+        std::cout << std::endl;
+    }
+    std::cout << "    ]" << std::endl;
+    std::cout << "  }" << std::endl;
 }
 
 // Função para saída em formato JSON
@@ -263,6 +469,61 @@ std::vector<std::string> findCFiles(const std::string& directory) {
 }
 
 // Função para imprimir tokens no formato verbose com filtros
+void printTokensSequential(const std::vector<Token>& tokens, const std::string& filename, bool hasErrors, const TokenFilter& filter = TokenFilter{}) {
+    std::cout << Colors::BOLD << "\n📊 ANÁLISE LÉXICA SEQUENCIAL" << Colors::RESET << std::endl;
+    std::cout << std::string(50, '=') << std::endl;
+    
+    int tokenCount = 0;
+    std::map<std::string, int> categoryCount;
+    
+    for (const auto& token : tokens) {
+        std::string category = getTokenCategory(token.getType());
+        if (filter.shouldShow(category)) {
+            tokenCount++;
+            categoryCount[category]++;
+            
+            std::string color = getTokenColor(token.getType());
+            
+            std::cout << std::setw(4) << tokenCount << ". "
+                     << color << std::setw(20) << std::left << tokenTypeToString(token.getType()) << Colors::RESET
+                     << " │ " << Colors::WHITE << "'" << token.getLexeme() << "'" << Colors::RESET
+                     << " │ " << Colors::GRAY << "L" << token.getPosition().line 
+                     << ":C" << token.getPosition().column << Colors::RESET
+                     << " │ " << Colors::CYAN << category << Colors::RESET << std::endl;
+        }
+    }
+    
+    if (tokenCount == 0) {
+        std::cout << Colors::YELLOW << "\n⚠️  Nenhum token encontrado com os filtros aplicados." << Colors::RESET << std::endl;
+        return;
+    }
+    
+    // Estatísticas finais
+    std::cout << Colors::BOLD << Colors::GREEN << "\n📈 ESTATÍSTICAS" << Colors::RESET << std::endl;
+    std::cout << std::string(30, '=') << std::endl;
+    std::cout << Colors::CYAN << "Total de tokens: " << Colors::BOLD << tokenCount << Colors::RESET << std::endl;
+    std::cout << Colors::CYAN << "Categorias encontradas: " << Colors::BOLD << categoryCount.size() << Colors::RESET << std::endl;
+    
+    if (filter.isFiltered()) {
+        std::cout << Colors::YELLOW << "\n🔍 Filtros aplicados - mostrando apenas categorias selecionadas" << Colors::RESET << std::endl;
+    }
+    
+    std::cout << Colors::YELLOW << "\nDistribuição por categoria:" << Colors::RESET << std::endl;
+    for (const auto& [category, count] : categoryCount) {
+        double percentage = (double)count / tokenCount * 100;
+        std::cout << "  • " << Colors::WHITE << std::setw(15) << std::left << category << Colors::RESET
+                 << ": " << Colors::BOLD << std::setw(3) << count << Colors::RESET
+                 << " (" << Colors::YELLOW << std::fixed << std::setprecision(1) << percentage << "%" << Colors::RESET << ")" << std::endl;
+    }
+    
+    // Verificar se houve erros
+    if (hasErrors) {
+        std::cout << Colors::RED << "\n⚠️  Erros encontrados durante o processamento" << Colors::RESET << std::endl;
+    } else {
+        std::cout << Colors::GREEN << "\n✅ Análise concluída sem erros!" << Colors::RESET << std::endl;
+    }
+}
+
 void printTokensVerbose(const std::vector<Token>& tokens, const std::string& filename, bool hasErrors, const TokenFilter& filter = TokenFilter{}) {
     // Organizar tokens por categoria
     std::map<std::string, std::vector<Token>> tokensByCategory;
@@ -328,7 +589,8 @@ void printTokensVerbose(const std::vector<Token>& tokens, const std::string& fil
 }
 
 // Função para processar um arquivo .c
-void processFile(const std::string& filename, OutputFormat format = OutputFormat::VERBOSE, const TokenFilter& filter = TokenFilter{}) {
+bool processFile(const std::string& filename, OutputFormat format = OutputFormat::VERBOSE, const TokenFilter& filter = TokenFilter{}) {
+    std::cout << "[DEBUG] processFile chamada para: " << filename << std::endl;
     std::cout << Colors::BOLD << Colors::CYAN << "\n╔══════════════════════════════════════════════════════════════╗" << Colors::RESET << std::endl;
     std::cout << Colors::BOLD << Colors::CYAN << "║" << Colors::RESET << " Processando: " << Colors::YELLOW << filename << Colors::RESET;
     std::cout << std::string(std::max(0, 40 - (int)filename.length()), ' ') << Colors::BOLD << Colors::CYAN << "║" << Colors::RESET << std::endl;
@@ -338,56 +600,104 @@ void processFile(const std::string& filename, OutputFormat format = OutputFormat
         // Verificar se o arquivo existe
         if (!fileExists(filename)) {
             std::cerr << Colors::RED << "❌ Arquivo não encontrado: " << filename << Colors::RESET << std::endl;
-            return;
+            return true;
         }
         
-        ErrorHandler errorHandler(100);
-        LexerMain lexer(filename, &errorHandler);
+        // Usar o pipeline integrado preprocessor-lexer
+        Integration::IntegrationConfig config;
+        config.enableErrorIntegration = true;
+        Integration::LexerPreprocessorBridge bridge(config);
         
-        // Coletar todos os tokens e organizá-los por categoria
-        std::map<std::string, std::vector<Token>> tokensByCategory;
+        // Inicializar o bridge explicitamente
+        if (!bridge.initialize()) {
+            std::cerr << Colors::RED << "❌ Erro na inicialização do pipeline" << Colors::RESET << std::endl;
+            return true;
+        }
+        
+        // Processar o arquivo através do pipeline
+        bool processingSuccess = bridge.processFile(filename);
+        
+        // Verificar se há erros críticos do pré-processador
+        bool hasPreprocessorErrors = bridge.hasErrors();
+        
+        if (!processingSuccess && hasPreprocessorErrors) {
+            std::cerr << Colors::RED << "❌ Erro crítico no pré-processador - interrompendo processamento" << Colors::RESET << std::endl;
+            
+            // Ainda assim, exibir informações do pré-processador para debug
+            if (format == OutputFormat::VERBOSE) {
+                printPreprocessorInfo(bridge);
+            } else if (format == OutputFormat::SUMMARY) {
+                printPreprocessorSummary(bridge);
+            }
+            
+            return true;
+        }
+        
+        // Exibir informações detalhadas do pré-processador
+        if (format == OutputFormat::VERBOSE) {
+            printPreprocessorInfo(bridge);
+        } else if (format == OutputFormat::SUMMARY) {
+            printPreprocessorSummary(bridge);
+        }
+        
+        // Obter todos os tokens processados
+        auto integratedTokens = bridge.tokenizeAll();
+        
+        // Coletar todos os tokens preservando a ordem original
+        std::vector<Token> allTokens;
         std::map<std::string, int> categoryCount;
         int totalTokens = 0;
         
-        while (lexer.hasMoreTokens()) {
-            Token token = lexer.nextToken();
+        for (const auto& integratedToken : integratedTokens) {
+            const auto& token = integratedToken.lexerToken;
             
-            if (token.getType() == TokenType::END_OF_FILE) {
-                break;
-            }
+            // Adicionar token preservando ordem sequencial
+            allTokens.push_back(token);
             
+            // Contar por categoria para estatísticas
             std::string category = getTokenCategory(token.getType());
-            tokensByCategory[category].push_back(token);
             categoryCount[category]++;
             totalTokens++;
         }
         
-        // Coletar todos os tokens em um vetor para as funções de formatação
-        std::vector<Token> allTokens;
-        for (const auto& [category, tokens] : tokensByCategory) {
-            allTokens.insert(allTokens.end(), tokens.begin(), tokens.end());
-        }
+        bool hasErrors = bridge.hasErrors();
         
-        bool hasErrors = errorHandler.hasErrors();
+        // Verificar se há tokens UNKNOWN (erros léxicos)
+        for (const auto& token : allTokens) {
+            if (token.getType() == TokenType::UNKNOWN) {
+                hasErrors = true;
+                break;
+            }
+        }
         
         // Escolher formato de saída
         switch (format) {
             case OutputFormat::JSON:
                 printTokensAsJson(allTokens, filename, hasErrors, filter);
+                printPreprocessorInfoJson(bridge);
                 break;
                 
             case OutputFormat::SUMMARY:
                 printTokensSummary(allTokens, filename, hasErrors, filter);
                 break;
                 
+            case OutputFormat::SEQUENTIAL:
+                printTokensSequential(allTokens, filename, hasErrors, filter);
+                printPreprocessorSummary(bridge);
+                break;
+                
             case OutputFormat::VERBOSE:
             default:
                 printTokensVerbose(allTokens, filename, hasErrors, filter);
+                printPreprocessorInfo(bridge);
                 break;
         }
         
+        return hasErrors;
+        
     } catch (const std::exception& e) {
         std::cerr << Colors::RED << "❌ Erro durante o processamento: " << e.what() << Colors::RESET << std::endl;
+        return true;
     }
 }
 
@@ -423,6 +733,7 @@ void printUsage(const char* programName) {
     std::cout << "  -v, --verbose   Saída detalhada com cores (padrão)" << std::endl;
     std::cout << "  -s, --summary   Saída resumida apenas com estatísticas" << std::endl;
     std::cout << "  -j, --json      Saída em formato JSON" << std::endl;
+    std::cout << "  -seq, --sequential  Saída sequencial sem agrupamento por categoria" << std::endl;
     
     std::cout << Colors::YELLOW << "\n🔍 OPÇÕES DE FILTRO:" << Colors::RESET << std::endl;
     std::cout << "  --filter-keywords      Mostrar apenas palavras-chave" << std::endl;
@@ -448,7 +759,7 @@ void printUsage(const char* programName) {
 }
 
 int main(int argc, char* argv[]) {
-    OutputFormat format = OutputFormat::VERBOSE;
+    OutputFormat format = OutputFormat::SEQUENTIAL;
     TokenFilter filter;
     std::string inputPath;
     bool hasFilterOptions = false;
@@ -467,6 +778,8 @@ int main(int argc, char* argv[]) {
             format = OutputFormat::SUMMARY;
         } else if (arg == "-j" || arg == "--json") {
             format = OutputFormat::JSON;
+        } else if (arg == "-seq" || arg == "--sequential") {
+            format = OutputFormat::SEQUENTIAL;
         } else if (arg == "--filter-keywords") {
             if (!hasFilterOptions) {
                 filter = TokenFilter{};
@@ -558,10 +871,12 @@ int main(int argc, char* argv[]) {
         printHeader();
     }
     
+    bool hasErrors = false;
+    
     try {
         if (isRegularFile(inputPath)) {
             if (isCFile(inputPath)) {
-                processFile(inputPath, format, filter);
+                hasErrors = processFile(inputPath, format, filter);
             } else {
                 std::cout << Colors::RED << "❌ Erro: O arquivo deve ter extensão .c" << Colors::RESET << std::endl;
                 return 1;
@@ -593,7 +908,9 @@ int main(int argc, char* argv[]) {
                 if (format == OutputFormat::JSON && i > 0) {
                     std::cout << ",\n";
                 }
-                processFile(cFiles[i], format, filter);
+                if (processFile(cFiles[i], format, filter)) {
+                    hasErrors = true;
+                }
             }
             
             if (format == OutputFormat::JSON) {
@@ -610,9 +927,13 @@ int main(int argc, char* argv[]) {
     
     // Mostrar mensagem final apenas para formato verbose
     if (format == OutputFormat::VERBOSE) {
-        std::cout << Colors::BOLD << Colors::GREEN << "\n🎉 PROCESSAMENTO FINALIZADO COM SUCESSO!" << Colors::RESET << std::endl;
+        if (hasErrors) {
+            std::cout << Colors::BOLD << Colors::RED << "\n❌ PROCESSAMENTO FINALIZADO COM ERROS!" << Colors::RESET << std::endl;
+        } else {
+            std::cout << Colors::BOLD << Colors::GREEN << "\n🎉 PROCESSAMENTO FINALIZADO COM SUCESSO!" << Colors::RESET << std::endl;
+        }
         std::cout << Colors::GRAY << "Obrigado por usar o Analisador Léxico C!" << Colors::RESET << std::endl;
     }
     
-    return 0;
+    return hasErrors ? 1 : 0;
 }

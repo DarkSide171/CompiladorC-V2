@@ -376,7 +376,18 @@ long long ExpressionEvaluator::evaluateSubexpression(const std::vector<Expressio
                         stack.push_back(-operand);
                     } else if (op == "+") {
                         stack.push_back(operand); // + unário não muda o valor
+                    } else if (op == "!") {
+                        stack.push_back(operand == 0 ? 1 : 0); // NOT lógico
                     }
+                }
+            }
+            // Verificar se é operador NOT (!)
+            else if (token.value == "!") {
+                // Operador NOT unário
+                if (stack.size() >= 1) {
+                    long long operand = stack.back();
+                    stack.pop_back();
+                    stack.push_back(!operand ? 1 : 0);
                 }
             }
             else if (stack.size() >= 2) {
@@ -533,7 +544,7 @@ std::vector<ExpressionToken> ExpressionEvaluator::handleOperatorPrecedence(const
         else if (token.type == ExpressionTokenType::OPERATOR) {
             // Verificar se é operador unário
             bool isUnary = false;
-            if ((token.value == "-" || token.value == "+") && 
+            if ((token.value == "-" || token.value == "+" || token.value == "!") && 
                 (i == 0 || tokens[i-1].type == ExpressionTokenType::LEFT_PAREN || 
                  tokens[i-1].type == ExpressionTokenType::OPERATOR)) {
                 isUnary = true;
@@ -644,8 +655,8 @@ bool ExpressionEvaluator::validateOperatorSyntax(const std::vector<ExpressionTok
             
             // Verificar operadores consecutivos
             if (i + 1 < tokens.size() && tokens[i + 1].type == ExpressionTokenType::OPERATOR) {
-                // Permitir apenas + e - como operadores unários consecutivos
-                if (tokens[i+1].value != "+" && tokens[i+1].value != "-") {
+                // Permitir apenas +, - e ! como operadores unários consecutivos
+                if (tokens[i+1].value != "+" && tokens[i+1].value != "-" && tokens[i+1].value != "!") {
                     return false; // Outros operadores consecutivos sempre inválidos
                 }
                 
@@ -670,7 +681,7 @@ bool ExpressionEvaluator::validateOperatorSyntax(const std::vector<ExpressionTok
         
         // Operador no início só é válido se for unário
         if (i == 0 && token.type == ExpressionTokenType::OPERATOR) {
-            if (token.value != "+" && token.value != "-") {
+            if (token.value != "+" && token.value != "-" && token.value != "!") {
                 return false;
             }
         }

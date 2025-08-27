@@ -17,7 +17,8 @@ ConditionalProcessor::ConditionalProcessor(PreprocessorLogger* logger, MacroProc
     : logger_(logger),
       evaluator_(std::make_unique<ExpressionEvaluator>(macro_proc, logger)),
       macro_processor_(macro_proc),
-      optimization_enabled_(true) {
+      optimization_enabled_(true),
+      external_error_handler_(nullptr) {
     // Inicializar logger
     if (logger_) {
         logger_->info("ConditionalProcessor initialized");
@@ -464,6 +465,10 @@ std::string ConditionalProcessor::generateStatusReport() const {
     oss << "  Optimization enabled: " << (optimization_enabled_ ? "Yes" : "No") << "\n";
     
     return oss.str();
+}
+
+void ConditionalProcessor::setErrorHandler(void* errorHandler) {
+    external_error_handler_ = errorHandler;
 }
 
 // ============================================================================

@@ -94,6 +94,7 @@ private:
     MacroProcessor* macro_processor_;               ///< Processador de macros (não possui)
     ConditionalStats statistics_;                   ///< Estatísticas de uso
     bool optimization_enabled_;                     ///< Flag de otimização
+    void* external_error_handler_;                  ///< ErrorHandler externo
     
 public:
     /**
@@ -291,6 +292,12 @@ public:
      * @return String com relatório detalhado
      */
     std::string generateStatusReport() const;
+    
+    /**
+     * @brief Define o manipulador de erros externo
+     * @param errorHandler Ponteiro para o manipulador de erros
+     */
+    void setErrorHandler(void* errorHandler);
 };
 
 // ============================================================================

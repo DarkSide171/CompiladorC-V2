@@ -92,10 +92,18 @@ private:
     std::unordered_map<std::string, std::string> expansionCache_;
     bool cacheEnabled_;
     
+    // Configurações de otimização
+    size_t maxCacheSize_;
+    bool enablePrecompilation_;
+    std::unordered_map<std::string, time_t> cacheTimestamps_;
+    
     // Estatísticas
     size_t totalExpansions_;
     size_t cacheHits_;
     size_t cacheMisses_;
+    
+    // Tratamento de erros
+    void* external_error_handler_;
     
 public:
     // ========================================================================
@@ -334,11 +342,36 @@ public:
     void clearCache();
     
     /**
-     * @brief Otimiza expansão de macro
-     * @param macroName Nome da macro
+     * @brief Otimiza expansão de macro específica
+     * @param macroName Nome da macro a otimizar
      * @return true se otimização foi aplicada
      */
     bool optimizeMacroExpansion(const std::string& macroName);
+    
+    /**
+     * @brief Configura otimizações de cache para macros
+     * @param maxCacheSize Tamanho máximo do cache
+     * @param enablePrecompilation Habilita pré-compilação de macros frequentes
+     */
+    void configureCacheOptimization(size_t maxCacheSize, bool enablePrecompilation = true);
+    
+    /**
+     * @brief Otimiza cache removendo entradas antigas
+     * @param maxAge Idade máxima das entradas em segundos
+     */
+    void optimizeCache(int maxAge = 300);
+    
+    /**
+     * @brief Pré-carrega macros frequentemente usadas
+     * @param macroNames Lista de macros para pré-carregar
+     */
+    void preloadFrequentMacros(const std::vector<std::string>& macroNames);
+    
+    /**
+     * @brief Obtém tamanho atual do cache
+     * @return Número de entradas no cache
+     */
+    size_t getCurrentCacheSize() const;
     
     /**
      * @brief Armazena resultado no cache
@@ -392,6 +425,12 @@ public:
      * @brief Limpa todas as macros (incluindo predefinidas)
      */
     void clearAllMacros();
+    
+    /**
+     * @brief Define o manipulador de erros externo
+     * @param errorHandler Ponteiro para o manipulador de erros
+     */
+    void setErrorHandler(void* errorHandler);
     
 private:
     // ========================================================================

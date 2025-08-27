@@ -113,14 +113,16 @@ void MacroExpansionContext::reset() {
 // Construtores e Destrutor
 MacroProcessor::MacroProcessor() 
     : logger_(nullptr), state_(nullptr), expansionContext_(200),
-      cacheEnabled_(true), totalExpansions_(0), cacheHits_(0), cacheMisses_(0) {
+      cacheEnabled_(true), maxCacheSize_(1000), enablePrecompilation_(true),
+      totalExpansions_(0), cacheHits_(0), cacheMisses_(0), external_error_handler_(nullptr) {
     initializeComponents();
 }
 
 MacroProcessor::MacroProcessor(std::shared_ptr<Preprocessor::PreprocessorLogger> logger,
                                std::shared_ptr<Preprocessor::PreprocessorState> state)
     : logger_(logger), state_(state), expansionContext_(200),
-      cacheEnabled_(true), totalExpansions_(0), cacheHits_(0), cacheMisses_(0) {
+      cacheEnabled_(true), maxCacheSize_(1000), enablePrecompilation_(true),
+      totalExpansions_(0), cacheHits_(0), cacheMisses_(0), external_error_handler_(nullptr) {
     initializeComponents();
 }
 
@@ -374,8 +376,20 @@ std::string MacroProcessor::expandMacroRecursively(const std::string& text) {
         return text;
     }
     
+    // Otimização: verifica cache primeiro para texto completo
+    if (cacheEnabled_) {
+        std::string textCacheKey = "__recursive_" + std::to_string(std::hash<std::string>{}(text));
+        auto cacheIt = expansionCache_.find(textCacheKey);
+        if (cacheIt != expansionCache_.end()) {
+            cacheHits_++;
+            return cacheIt->second;
+        }
+        cacheMisses_++;
+    }
+    
     std::string result = text;
     size_t pos = 0;
+    bool hasExpansions = false;
     
     while (pos < result.length()) {
         auto macroInfo = findNextMacro(result, pos);
@@ -392,14 +406,27 @@ std::string MacroProcessor::expandMacroRecursively(const std::string& text) {
             continue;
         }
         
+        // Verifica se a macro está definida antes de tentar expandir
+        if (!isDefined(macroName)) {
+            pos = macroPos + macroName.length();
+            continue;
+        }
+        
         // Expande a macro
         std::string expansion = expandMacro(macroName);
         if (expansion != macroName) {
             result.replace(macroPos, macroName.length(), expansion);
             pos = macroPos + expansion.length();
+            hasExpansions = true;
         } else {
             pos = macroPos + macroName.length();
         }
+    }
+    
+    // Cache o resultado se houve expansões
+    if (cacheEnabled_ && hasExpansions) {
+        std::string textCacheKey = "__recursive_" + std::to_string(std::hash<std::string>{}(text));
+        cacheMacroResult(textCacheKey, result);
     }
     
     return result;
@@ -502,7 +529,9 @@ bool MacroProcessor::handleMacroRedefinition(const std::string& name, const Macr
 }
 
 std::string MacroProcessor::handleStringification(const std::string& argument) {
-    std::string result = "\"";
+    std::string result;
+    result.reserve(argument.size() + 10); // Reserve space for quotes and escapes
+    result += "\"";
     
     for (char c : argument) {
         if (c == '\"' || c == '\\') {
@@ -518,7 +547,12 @@ std::string MacroProcessor::handleStringification(const std::string& argument) {
 std::string MacroProcessor::handleConcatenation(const std::string& left, const std::string& right) {
     std::string leftTrimmed = trimWhitespace(left);
     std::string rightTrimmed = trimWhitespace(right);
-    return leftTrimmed + rightTrimmed;
+    
+    std::string result;
+    result.reserve(leftTrimmed.size() + rightTrimmed.size());
+    result += leftTrimmed;
+    result += rightTrimmed;
+    return result;
 }
 
 std::string MacroProcessor::expandVariadicArguments(const std::vector<std::string>& variadicArgs) {
@@ -526,13 +560,22 @@ std::string MacroProcessor::expandVariadicArguments(const std::vector<std::strin
         return "";
     }
     
-    std::ostringstream oss;
+    std::string result;
+    // Estimate size: args + separators
+    size_t estimatedSize = 0;
+    for (const auto& arg : variadicArgs) {
+        estimatedSize += arg.size() + 2; // +2 for ", "
+    }
+    result.reserve(estimatedSize);
+    
     for (size_t i = 0; i < variadicArgs.size(); ++i) {
-        if (i > 0) oss << ", ";
-        oss << variadicArgs[i];
+        if (i > 0) {
+            result += ", ";
+        }
+        result += variadicArgs[i];
     }
     
-    return oss.str();
+    return result;
 }
 
 // Parsing e Utilitários
@@ -680,18 +723,97 @@ void MacroProcessor::setCacheEnabled(bool enabled) {
 
 void MacroProcessor::clearCache() {
     expansionCache_.clear();
+    cacheTimestamps_.clear();
 }
 
 bool MacroProcessor::optimizeMacroExpansion(const std::string& macroName) {
-    // Implementação básica de otimização
-    // Pode ser expandida no futuro
+    if (!isDefined(macroName)) {
+        return false;
+    }
+    
+    const MacroInfo& info = macros_[macroName];
+    
+    // Otimiza macros frequentemente usadas
+    if (info.expansionCount > 10) {
+        // Pré-compila a expansão para macros simples
+        if (!info.isFunctionLike() && !info.value.empty()) {
+            std::string precompiledKey = "__precompiled_" + macroName;
+            std::string expandedValue = expandMacroRecursively(info.value);
+            cacheMacroResult(precompiledKey, expandedValue);
+            return true;
+        }
+    }
+    
     return false;
 }
 
 void MacroProcessor::cacheMacroResult(const std::string& key, const std::string& result) {
     if (cacheEnabled_) {
+        // Verifica se o cache excedeu o tamanho máximo
+        if (expansionCache_.size() >= maxCacheSize_) {
+            // Remove a entrada mais antiga
+            auto oldestIt = cacheTimestamps_.begin();
+            for (auto it = cacheTimestamps_.begin(); it != cacheTimestamps_.end(); ++it) {
+                if (it->second < oldestIt->second) {
+                    oldestIt = it;
+                }
+            }
+            expansionCache_.erase(oldestIt->first);
+            cacheTimestamps_.erase(oldestIt);
+        }
+        
         expansionCache_[key] = result;
+        cacheTimestamps_[key] = time(nullptr);
     }
+}
+
+void MacroProcessor::configureCacheOptimization(size_t maxCacheSize, bool enablePrecompilation) {
+    maxCacheSize_ = maxCacheSize;
+    enablePrecompilation_ = enablePrecompilation;
+    
+    // Se o cache atual é maior que o novo limite, limpa
+    if (expansionCache_.size() > maxCacheSize_) {
+        clearCache();
+    }
+}
+
+void MacroProcessor::optimizeCache(int maxAge) {
+    if (!cacheEnabled_) return;
+    
+    time_t currentTime = time(nullptr);
+    std::vector<std::string> keysToRemove;
+    
+    for (const auto& entry : cacheTimestamps_) {
+        if (currentTime - entry.second > maxAge) {
+            keysToRemove.push_back(entry.first);
+        }
+    }
+    
+    for (const std::string& key : keysToRemove) {
+        expansionCache_.erase(key);
+        cacheTimestamps_.erase(key);
+    }
+}
+
+void MacroProcessor::preloadFrequentMacros(const std::vector<std::string>& macroNames) {
+    if (!cacheEnabled_ || !enablePrecompilation_) return;
+    
+    for (const std::string& macroName : macroNames) {
+        if (isDefined(macroName)) {
+            const MacroInfo& info = macros_[macroName];
+            if (!info.isFunctionLike() && !info.value.empty()) {
+                std::string cacheKey = generateCacheKey(macroName);
+                if (expansionCache_.find(cacheKey) == expansionCache_.end()) {
+                    std::string expandedValue = expandMacroRecursively(info.value);
+                    cacheMacroResult(cacheKey, expandedValue);
+                }
+            }
+        }
+    }
+}
+
+size_t MacroProcessor::getCurrentCacheSize() const {
+    return expansionCache_.size();
 }
 
 // Estatísticas e Relatórios
@@ -1035,6 +1157,10 @@ void MacroProcessor::logMacroWarning(const std::string& message,
     if (logger_) {
         logger_->warning(message, position);
     }
+}
+
+void MacroProcessor::setErrorHandler(void* errorHandler) {
+    external_error_handler_ = errorHandler;
 }
 
 // ============================================================================

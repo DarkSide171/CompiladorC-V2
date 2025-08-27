@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <fstream>
+#include <sstream>
 #include "token.hpp"
 #include "error_handler.hpp"
 #include "lexer_config.hpp"
@@ -29,6 +30,7 @@ namespace Lexer {
 class LexerMain {
 private:
     std::unique_ptr<std::ifstream> sourceFile;     ///< Arquivo fonte sendo analisado
+    std::istream* inputStream;                    ///< Stream de entrada (para código de string)
     ErrorHandler* errorHandler;                   ///< Manipulador de erros (não possui)
     std::unique_ptr<LexerConfig> config;          ///< Configurações do lexer
     std::unique_ptr<LexerLogger> logger;          ///< Sistema de logging
@@ -72,11 +74,19 @@ private:
     
 public:
     /**
-     * @brief Construtor do LexerMain
+     * @brief Construtor do LexerMain para arquivo
      * @param filename Nome do arquivo fonte a ser analisado
      * @param errorHandler Ponteiro para o manipulador de erros
      */
     LexerMain(const std::string& filename, ErrorHandler* errorHandler);
+    
+    /**
+     * @brief Construtor do LexerMain para stream de código
+     * @param inputStream Stream contendo o código fonte
+     * @param errorHandler Ponteiro para o manipulador de erros
+     * @param sourceName Nome opcional do arquivo fonte (para debug)
+     */
+    LexerMain(std::istream& inputStream, ErrorHandler* errorHandler, const std::string& sourceName = "<string>");
     
     /**
      * @brief Destrutor do LexerMain

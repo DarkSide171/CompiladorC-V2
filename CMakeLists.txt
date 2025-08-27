@@ -22,14 +22,15 @@ add_subdirectory(src/lexer)
 add_subdirectory(src/preprocessor)
 
 # Criar executável principal
-add_executable(CompiladorC src/main.cpp)
+add_executable(CompiladorC src/main.cpp src/lexer_preprocessor_bridge.cpp)
 
-# Linkar com a biblioteca do lexer
-target_link_libraries(CompiladorC PRIVATE lexer)
+# Linkar com as bibliotecas do lexer e preprocessor
+target_link_libraries(CompiladorC PRIVATE lexer preprocessor)
 
 # Configurar diretórios de include para o executável
 target_include_directories(CompiladorC PRIVATE
     src/lexer/include
+    src/preprocessor/include
 )
 
 # Habilitar testes

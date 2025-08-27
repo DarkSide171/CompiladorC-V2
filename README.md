@@ -50,6 +50,22 @@ Este projeto consiste no desenvolvimento de um compilador completo para a lingua
   - Detecção de variáveis não declaradas
   - Verificação de retorno de funções
 
+### 0.5. Pré-processador C
+**Status: ✅ Implementado**
+
+- **Objetivo**: Processar diretivas de pré-processamento antes da análise léxica
+- **Funcionalidades Implementadas**:
+  - ✅ Processamento de diretivas #include
+  - ✅ Definição e expansão de macros (#define)
+  - ✅ Compilação condicional (#if, #ifdef, #ifndef, #else, #elif, #endif)
+  - ✅ Gerenciamento de arquivos e dependências
+  - ✅ Avaliação de expressões constantes
+  - ✅ Mapeamento de posições para debug
+  - ✅ Cache de arquivos e otimizações de performance
+  - ✅ Suporte completo aos padrões C89-C23
+  - ✅ Interface de integração com lexer
+  - ✅ Documentação completa de APIs
+
 ### 4. Geração de Código Intermediário
 **Status: 🔄 Em Planejamento**
 
@@ -73,12 +89,18 @@ Este projeto consiste no desenvolvimento de um compilador completo para a lingua
 ```
 CompialdorC_v2/
 ├── src/
-│   ├── preprocessor/       # Preprocessador C (Nova Fase 0.5)
-│   │   ├── include/        # Headers do preprocessador
-│   │   ├── src/            # Implementações
-│   │   ├── data/           # Headers padrão e configurações
-│   │   ├── tests/          # Testes do preprocessador
-│   │   └── CMakeLists.txt  # Build do preprocessador
+│   ├── preprocessor/       # Pré-processador C (Fase 0.5) ✅ IMPLEMENTADO
+│   │   ├── include/        # Headers das classes principais
+│   │   │   ├── preprocessor.hpp          # Interface principal
+│   │   │   ├── macro_processor.hpp       # Processamento de macros
+│   │   │   ├── file_manager.hpp          # Gerenciamento de arquivos
+│   │   │   ├── directive_processor.hpp   # Processamento de diretivas
+│   │   │   ├── conditional_processor.hpp # Compilação condicional
+│   │   │   └── expression_evaluator.hpp  # Avaliação de expressões
+│   │   ├── src/            # Implementações (.cpp)
+│   │   ├── data/           # Headers padrão C e configurações
+│   │   ├── tests/          # Testes unitários e de integração
+│   │   └── CMakeLists.txt  # Configuração de build
 │   ├── lexer/              # Analisador Léxico (Fase 1)
 │   │   ├── include/        # Headers (.hpp)
 │   │   ├── src/            # Implementações (.cpp)
@@ -89,9 +111,13 @@ CompialdorC_v2/
 │   └── codegen/            # Geração de Código (Fases 4-5 - Planejado)
 ├── Tests/                  # Testes unitários e de integração
 ├── Docs/                   # Documentação técnica completa
-│   ├── PREPROCESSADOR.md   # Especificação do preprocessador
-│   ├── ANALISADOR_SINTATICO.md # Especificação do parser
-│   └── PROJETO_COMPILADOR_STATUS.md # Status geral
+│   ├── PREPROCESSADOR_IMPLEMENTACAO.md     # Especificação do preprocessador
+│   ├── PREPROCESSOR_API_DOCUMENTATION.md   # Documentação das APIs
+│   ├── PREPROCESSOR_USAGE_EXAMPLES.md      # Exemplos de uso
+│   ├── PREPROCESSOR_INTEGRATION_GUIDE.md   # Guia de integração
+│   ├── PREPROCESSOR_CONFIGURATION.md       # Configurações e opções
+│   ├── ANALISADOR_SINTATICO.md             # Especificação do parser
+│   └── PROJETO_COMPILADOR_STATUS.md        # Status geral
 ├── Examples/               # Exemplos de código C para teste
 └── CMakeLists.txt          # Configuração de build
 ```
@@ -105,6 +131,11 @@ CompialdorC_v2/
 
 ## Como Compilar
 
+### Pré-requisitos
+- **C++17** ou superior
+- **CMake 3.15** ou superior
+- **Compilador**: GCC 7+, Clang 6+, ou MSVC 2019+
+
 ### Opção 1: Script de Build (Recomendado)
 ```bash
 # Compilação simples
@@ -112,60 +143,129 @@ CompialdorC_v2/
 
 # Compilação com limpeza
 ./build.sh clean
+
+# Compilação com testes
+./build.sh test
 ```
 
 ### Opção 2: CMake Manual
 ```bash
+# Configuração e compilação
+mkdir -p build
+cd build
+cmake ..
+make -j$(nproc)
+
+# Executar testes
+make test
+
+# Instalar (opcional)
+sudo make install
+```
+
+### Opção 3: Build Específico do Pré-processador
+```bash
+# Compilar apenas o pré-processador
+cd src/preprocessor
 mkdir -p build
 cd build
 cmake ..
 make
+
+# Executar testes do pré-processador
+./tests/preprocessor_tests
 ```
 
 ## Como Usar
 
+### Compilador Completo
+
 Após a compilação, o executável `CompiladorC` estará disponível em `build/CompiladorC`.
 
-### Exemplos de Uso
-
 ```bash
-# Ajuda
+# Ajuda geral
 ./build/CompiladorC --help
 
-# Análise completa (verbose)
+# Compilação completa (pré-processador + lexer)
 ./build/CompiladorC arquivo.c
 
-# Saída resumida
-./build/CompiladorC --summary arquivo.c
+# Apenas pré-processamento
+./build/CompiladorC --preprocess-only arquivo.c
 
-# Saída em JSON
-./build/CompiladorC --json arquivo.c
+# Saída detalhada
+./build/CompiladorC --verbose arquivo.c
 
-# Filtrar apenas palavras-chave
-./build/CompiladorC --filter-keywords arquivo.c
+# Definir macros
+./build/CompiladorC -DDEBUG=1 -DVERSION=\"1.0\" arquivo.c
 
-# Combinar filtros
-./build/CompiladorC --summary --filter-operators --filter-keywords arquivo.c
+# Adicionar caminhos de inclusão
+./build/CompiladorC -I./include -I/usr/local/include arquivo.c
 
-# Processar diretório inteiro
-./build/CompiladorC --summary src/
+# Especificar padrão C
+./build/CompiladorC --std=c17 arquivo.c
 ```
 
-### Opções Disponíveis
+### Pré-processador Standalone
 
-**Formatos de Saída:**
-- `--verbose` ou `-v`: Saída detalhada com cores (padrão)
-- `--summary` ou `-s`: Saída resumida com estatísticas
-- `--json` ou `-j`: Saída em formato JSON
+```bash
+# Executar apenas o pré-processador
+./build/src/preprocessor/preprocessor_cli arquivo.c
 
-**Filtros por Categoria:**
-- `--filter-keywords`: Apenas palavras-chave
-- `--filter-operators`: Apenas operadores
-- `--filter-identifiers`: Apenas identificadores
-- `--filter-literals`: Apenas literais
-- `--filter-delimiters`: Apenas delimitadores
-- `--filter-punctuation`: Apenas pontuação
-- `--filter-preprocessor`: Apenas diretivas de preprocessador
+# Pré-processamento com saída para arquivo
+./build/src/preprocessor/preprocessor_cli -o arquivo_processado.c arquivo.c
+
+# Mostrar dependências
+./build/src/preprocessor/preprocessor_cli --show-dependencies arquivo.c
+
+# Debug do pré-processador
+./build/src/preprocessor/preprocessor_cli --debug --verbose arquivo.c
+
+# Configuração personalizada
+./build/src/preprocessor/preprocessor_cli --config config.json arquivo.c
+```
+
+### Opções do Compilador
+
+**Controle de Fases:**
+- `--preprocess-only` ou `-E`: Apenas pré-processamento
+- `--compile-only` ou `-c`: Até análise sintática
+- `--assemble-only` ou `-S`: Até geração de assembly
+
+**Configuração:**
+- `-D<macro>[=<valor>]`: Definir macro
+- `-U<macro>`: Remover definição de macro
+- `-I<diretório>`: Adicionar caminho de inclusão
+- `--std=<padrão>`: Especificar padrão C (c89, c99, c11, c17)
+
+**Saída e Debug:**
+- `--verbose` ou `-v`: Saída detalhada
+- `--quiet` ou `-q`: Saída mínima
+- `--debug`: Informações de debug
+- `-o <arquivo>`: Especificar arquivo de saída
+
+**Otimização:**
+- `--optimize` ou `-O`: Habilitar otimizações
+- `--cache-size <tamanho>`: Tamanho do cache (ex: 100M)
+- `--parallel`: Processamento paralelo quando possível
+
+### Exemplos Práticos
+
+```bash
+# Projeto típico C
+./build/CompiladorC -I./include -DDEBUG=1 src/main.c
+
+# Código com headers de sistema
+./build/CompiladorC -I/usr/include -std=c11 programa.c
+
+# Debug completo do pré-processamento
+./build/CompiladorC --preprocess-only --debug --verbose complex_file.c
+
+# Compilação otimizada
+./build/CompiladorC --optimize --cache-size 200M --parallel projeto.c
+
+# Verificar dependências
+./build/CompiladorC --show-dependencies --preprocess-only main.c
+```
 
 ## 🗺️ Roadmap de Desenvolvimento
 
@@ -175,12 +275,20 @@ Após a compilação, o executável `CompiladorC` estará disponível em `build/
 - **Preprocessamento**: ✅ Reconhecimento básico de diretivas implementado
 - **Localização**: `src/lexer/`
 
-### ✅ Capacidades de Preprocessamento (FUNCIONAL BÁSICO)
-- **Status**: ✅ Reconhecimento de diretivas implementado
-- **Funcionalidades**: Tokenização de `#include`, `#define`, `#ifdef`, etc.
-- **Limitações**: Sem expansão de macros ou inclusão de arquivos
-- **Conclusão**: Suficiente para desenvolvimento do parser
-- **Documentação**: `Docs/ANALISE_PREPROCESSAMENTO_ATUAL.md`
+### ✅ Fase 0.5: Pré-processador C (IMPLEMENTADO COMPLETAMENTE)
+- **Status**: ✅ Implementação completa e funcional
+- **Funcionalidades**: 
+  - ✅ Processamento completo de diretivas (#include, #define, etc.)
+  - ✅ Expansão de macros (simples e funcionais)
+  - ✅ Compilação condicional (#if, #ifdef, #ifndef, #else, #elif, #endif)
+  - ✅ Inclusão de arquivos com resolução de caminhos
+  - ✅ Avaliação de expressões constantes
+  - ✅ Gerenciamento de dependências
+  - ✅ Cache de arquivos e otimizações
+  - ✅ Interface de integração com lexer
+- **Documentação**: `Docs/PREPROCESSOR_*.md` (5 documentos completos)
+- **Testes**: Suite completa de testes unitários e de integração
+- **APIs**: Documentação completa das interfaces públicas
 
 ### 🚀 Fase 2: Analisador Sintático (PRONTO PARA IMPLEMENTAÇÃO)
 - **Status**: 📋 Especificação completa, pronto para implementação

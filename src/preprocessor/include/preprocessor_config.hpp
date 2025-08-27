@@ -33,6 +33,7 @@ struct VersionFeatures {
     bool supports_alignof = false;              ///< Suporte a _Alignof
     bool supports_thread_local = false;         ///< Suporte a _Thread_local
     bool supports_unicode_literals = false;     ///< Suporte a literais Unicode
+    bool supports_inline_functions = false;     ///< Suporte a funções inline
     bool supports_typeof = false;               ///< Suporte a typeof (C23)
     bool supports_decimal_floats = false;       ///< Suporte a floats decimais (C23)
 };

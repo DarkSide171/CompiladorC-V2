@@ -14,6 +14,7 @@ set(PREPROCESSOR_SOURCES
     src/preprocessor_config.cpp
     src/preprocessor_state.cpp
     src/preprocessor_logger.cpp
+    src/preprocessor_lexer_interface.cpp
 )
 
 # Definir arquivos de cabeçalho do preprocessor
@@ -27,6 +28,7 @@ set(PREPROCESSOR_HEADERS
     include/preprocessor_config.hpp
     include/preprocessor_state.hpp
     include/preprocessor_logger.hpp
+    include/preprocessor_lexer_interface.hpp
 )
 
 # Define diretório de saída para biblioteca

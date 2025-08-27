@@ -1,4 +1,5 @@
 #include "../include/preprocessor.hpp"
+#include "../include/preprocessor_lexer_interface.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -11,6 +12,7 @@ PreprocessorMain::PreprocessorMain(const std::string& config_file)
     : initialized_(false)
     , processing_active_(false)
     , current_line_(0)
+    , external_error_handler_(nullptr)
 {
     // Inicializar componentes
     config_ = std::make_unique<PreprocessorConfig>();
@@ -424,8 +426,16 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                         }
                         
                         // Definir macro com parâmetros
-                        macro_processor_->defineMacro(base_name + params_str, macro_value);
-                        logger_->info("Macro com parâmetros definida: " + base_name + params_str + " = " + macro_value);
+                        std::string macro_key = base_name;
+                        macro_key += params_str;
+                        macro_processor_->defineMacro(macro_key, macro_value);
+                        
+                        std::string log_msg = "Macro com parâmetros definida: ";
+                        log_msg += base_name;
+                        log_msg += params_str;
+                        log_msg += " = ";
+                        log_msg += macro_value;
+                        logger_->info(log_msg);
                     } else {
                         // Macro simples (object-like)
                         if (args.size() > 1) {
@@ -439,14 +449,21 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                         
                         // Definir macro simples
                         macro_processor_->defineMacro(macro_name, macro_value);
-                        logger_->info("Macro definida: " + macro_name + " = " + macro_value);
+                        
+                        std::string log_msg = "Macro definida: ";
+                        log_msg += macro_name;
+                        log_msg += " = ";
+                        log_msg += macro_value;
+                        logger_->info(log_msg);
                     }
                 }
                 break;
                 
             case DirectiveType::UNDEF:
                 {
-                    logger_->info("Processando #undef: " + directive.getContent());
+                    std::string log_msg = "Processando #undef: ";
+                    log_msg += directive.getContent();
+                    logger_->info(log_msg);
                     
                     const auto& args = directive.getArguments();
                     if (args.empty()) {
@@ -459,9 +476,13 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                     // Verificar se a macro está definida
                     if (macro_processor_->isDefined(macro_name)) {
                         macro_processor_->undefineMacro(macro_name);
-                        logger_->info("Macro removida: " + macro_name);
+                        std::string info_msg = "Macro removida: ";
+                        info_msg += macro_name;
+                        logger_->info(info_msg);
                     } else {
-                        logger_->warning("Tentativa de remover macro não definida: " + macro_name);
+                        std::string warn_msg = "Tentativa de remover macro não definida: ";
+                        warn_msg += macro_name;
+                        logger_->warning(warn_msg);
                     }
                 }
                 break;
@@ -527,8 +548,23 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                 break;
                 
             case DirectiveType::ERROR:
-                logger_->error("#error: " + directive.getContent());
-                return false;
+                {
+                    // Criar DirectiveProcessor temporário para processar #error corretamente
+                DirectiveProcessor directive_processor(state_.get(), logger_.get(), 
+                                                     macro_processor_.get(), file_manager_.get(), 
+                                                     conditional_processor_.get());
+                
+                // Configurar errorHandler se disponível
+                if (external_error_handler_) {
+                    directive_processor.setErrorHandler(external_error_handler_);
+                }
+                
+                // Processar diretiva #error usando o DirectiveProcessor
+                bool result = directive_processor.processErrorDirective(directive.getContent(), directive.getPosition());
+                    
+                    // #error sempre deve falhar o processamento
+                    return false;
+                }
                 
             case DirectiveType::WARNING:
                 logger_->warning("#warning: " + directive.getContent());
@@ -665,6 +701,18 @@ bool PreprocessorMain::isMacroDefined(const std::string& name) const {
     return false;
 }
 
+// Obter macros definidas
+std::unordered_map<std::string, std::string> PreprocessorMain::getDefinedMacros() const {
+    std::unordered_map<std::string, std::string> result;
+    if (macro_processor_) {
+        auto macroNames = macro_processor_->getDefinedMacros();
+        for (const auto& name : macroNames) {
+            result[name] = macro_processor_->getMacroValue(name);
+        }
+    }
+    return result;
+}
+
 // Configuração de versão
 void PreprocessorMain::setVersion(CVersion version) {
     if (config_) {
@@ -678,6 +726,23 @@ void PreprocessorMain::setVersion(CVersion version) {
 }
 
 // Obter estatísticas
+void PreprocessorMain::setErrorHandler(void* errorHandler) {
+    external_error_handler_ = errorHandler;
+    
+    // Propagar o external error handler para todos os componentes
+    if (macro_processor_) {
+        macro_processor_->setErrorHandler(errorHandler);
+    }
+    
+    if (conditional_processor_) {
+        conditional_processor_->setErrorHandler(errorHandler);
+    }
+    
+    if (file_manager_) {
+        file_manager_->setErrorHandler(errorHandler);
+    }
+}
+
 PreprocessorState PreprocessorMain::getStatistics() const {
     // Implementação de coleta de estatísticas apropriadas
     if (state_) {
@@ -815,6 +880,13 @@ void PreprocessorMain::handleErrors(const std::string& error_msg, const Preproce
 }
 
 void PreprocessorMain::reportError(const std::string& error_msg, const PreprocessorPosition& pos) {
+    // Reportar para errorHandler externo se disponível
+    if (external_error_handler_) {
+        auto* errorHandler = static_cast<IntegratedErrorHandler*>(external_error_handler_);
+        errorHandler->reportError(IntegratedErrorHandler::ErrorSource::PREPROCESSOR, 
+                                error_msg, pos.line, pos.column, pos.filename);
+    }
+    
     // Criar mensagem de erro detalhada com contexto
     std::string detailed_error = "[" + pos.filename + ":" + std::to_string(pos.line) + ":" + std::to_string(pos.column) + "] " + error_msg;
     

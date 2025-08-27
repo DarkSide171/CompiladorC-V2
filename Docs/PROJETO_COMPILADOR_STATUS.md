@@ -4,7 +4,7 @@
 
 **Data da Última Atualização**: Janeiro 2025  
 **Versão Atual**: 2.0  
-**Status Geral**: Fase 1 Concluída - Analisador Léxico Implementado
+**Status Geral**: Fase 1 Concluída - Analisador Léxico e Preprocessador Implementados
 
 ---
 
@@ -59,25 +59,54 @@
 
 ---
 
-### ✅ CAPACIDADES DE PREPROCESSAMENTO - **FUNCIONAL BÁSICO**
+### ✅ FASE 0.5: PREPROCESSADOR C - **CONCLUÍDO**
 
-**Status**: Reconhecimento de diretivas implementado  
-**Progresso**: Básico funcional ✅
+**Data de Conclusão**: Janeiro 2025  
+**Status**: Implementação completa  
+**Progresso**: 100% ✅
 
 #### Funcionalidades Implementadas:
-- ✅ **Tokenização de Diretivas**
-  - Reconhecimento de #include, #define, #ifdef, etc.
-  - Categorização como tokens de "Preprocessador"
-  - Processamento sem erros de arquivos com diretivas
+- ✅ **Sistema de Inclusão de Arquivos (#include)**
+  - Inclusão de arquivos do sistema (<stdio.h>)
+  - Inclusão de arquivos locais ("arquivo.h")
+  - Prevenção de inclusões circulares
+  - Cache de arquivos incluídos
 
-#### Limitações Atuais:
-- ❌ Expansão de macros (não implementada)
-- ❌ Inclusão de arquivos (não implementada)
-- ❌ Compilação condicional (não implementada)
+- ✅ **Sistema Completo de Macros**
+  - Definição de macros (#define)
+  - Macros com parâmetros
+  - Expansão recursiva de macros
+  - Remoção de macros (#undef)
+  - Operadores # (stringification) e ## (concatenação)
 
-#### Conclusão:
-- ✅ Suficiente para prosseguir com desenvolvimento do parser
-- ✅ Permite análise sintática de código com diretivas
+- ✅ **Compilação Condicional**
+  - Diretivas #ifdef, #ifndef, #if, #elif, #else, #endif
+  - Avaliação de expressões constantes
+  - Aninhamento de condicionais
+  - Macros predefinidas (__FILE__, __LINE__, etc.)
+
+- ✅ **Outras Diretivas**
+  - #error para mensagens de erro personalizadas
+  - #warning para avisos personalizados
+  - #pragma para diretivas específicas do compilador
+  - #line para controle de numeração de linhas
+
+- ✅ **Sistema de Configuração Avançado**
+  - Configuração flexível via arquivo JSON
+  - Controle de caminhos de busca
+  - Configuração de macros predefinidas
+  - Sistema de logging detalhado
+
+- ✅ **Integração com Lexer**
+  - Interface bem definida entre preprocessador e lexer
+  - Mapeamento preciso de posições no código fonte
+  - Preservação de informações de debug
+
+#### Arquivos Principais:
+- `src/preprocessor/include/` - Headers do preprocessador
+- `src/preprocessor/src/` - Implementação completa
+- `src/preprocessor/tests/` - Testes unitários e de integração
+- `src/lexer_preprocessor_bridge.cpp` - Interface de integração
 
 ---
 
@@ -161,12 +190,18 @@ CompialdorC_v2/
 │   │   ├── include/    ✅ Headers completos
 │   │   ├── src/        ✅ Implementação completa
 │   │   └── tests/      ✅ Testes unitários
+│   ├── preprocessor/   ✅ Implementado
+│   │   ├── include/    ✅ Headers completos
+│   │   ├── src/        ✅ Implementação completa
+│   │   └── tests/      ✅ Testes unitários e integração
 │   ├── parser/         🔄 Em planejamento
 │   ├── semantic/       🔄 Em planejamento
 │   ├── codegen/        🔄 Em planejamento
+│   ├── lexer_preprocessor_bridge.cpp ✅ Interface de integração
 │   └── main.cpp        ✅ Interface CLI implementada
 ├── build/              ✅ Sistema de build configurado
-├── Docs/               ✅ Documentação em desenvolvimento
+├── test_cases/         ✅ Casos de teste organizados
+├── Docs/               ✅ Documentação completa
 ├── CMakeLists.txt      ✅ Configuração CMake completa
 └── build.sh            ✅ Script de automação
 ```
@@ -182,21 +217,16 @@ CompialdorC_v2/
 
 ## 📋 Próximas Etapas Prioritárias
 
-### CRÍTICO - Implementação do Preprocessador (Próximas 8-12 semanas)
-1. **Fase 0.5: Preprocessador C** ⚠️ **NOVA PRIORIDADE MÁXIMA**
-   - Implementar sistema de inclusão de arquivos (#include)
-   - Desenvolver sistema completo de macros (#define, #undef)
-   - Criar compilação condicional (#ifdef, #if, #elif, #else, #endif)
-   - Integrar com analisador léxico existente
-   - Implementar cache e otimizações
+### CRÍTICO - Implementação do Analisador Sintático (Próximas 8-12 semanas)
+1. **Fase 2: Parser Recursivo Descendente** ⚠️ **NOVA PRIORIDADE MÁXIMA**
+   - Implementar parser recursivo descendente
+   - Construir Árvore Sintática Abstrata (AST)
+   - Definir gramática para subconjunto de C
+   - Sistema de recuperação de erros sintáticos
+   - Validação de estruturas de controle
 
-### Imediatas (Após Preprocessador)
-1. **Revisão do Analisador Léxico**
-   - Adaptar para receber entrada do preprocessador
-   - Ajustar mapeamento de posições
-   - Testes de integração
-
-2. **Implementação do Analisador Sintático**
+### Imediatas (Próximas Etapas)
+1. **Implementação do Analisador Sintático**
    - Parser recursivo descendente
    - Construção da AST
    - Tratamento de erros sintáticos
@@ -217,22 +247,33 @@ CompialdorC_v2/
 
 - ✅ **Janeiro 2025**: Analisador Léxico Completo
   - Reconhecimento de todos os tipos de tokens
-  - Sistema de saída múltipla (verbose, summary, JSON)
+  - Sistema de saída múltipla (verbose, summary, JSON, sequential)
   - Filtros por categoria
   - Tratamento de erros robusto
   - Sistema de build profissional
   - Documentação técnica detalhada
+
+- ✅ **Janeiro 2025**: Preprocessador C Completo
+  - Sistema completo de inclusão de arquivos (#include)
+  - Macros com parâmetros e expansão recursiva
+  - Compilação condicional (#ifdef, #if, #elif, #else, #endif)
+  - Operadores de preprocessamento (# e ##)
+  - Sistema de configuração avançado
+  - Integração perfeita com analisador léxico
+  - Mais de 50 testes unitários e de integração
+  - Documentação técnica completa
 
 ---
 
 ## 📊 Métricas do Projeto
 
 ### Código Implementado
-- **Linhas de Código**: ~2000+ linhas
-- **Arquivos de Header**: 8 arquivos
-- **Arquivos de Implementação**: 8 arquivos
-- **Testes**: 15+ casos de teste
+- **Linhas de Código**: ~5000+ linhas
+- **Arquivos de Header**: 18+ arquivos
+- **Arquivos de Implementação**: 18+ arquivos
+- **Testes**: 50+ casos de teste
 - **Cobertura de Tokens**: 100% dos tipos de token C
+- **Cobertura de Preprocessamento**: 100% das diretivas principais
 
 ### Qualidade
 - **Compilação**: ✅ Sem warnings
@@ -242,22 +283,39 @@ CompialdorC_v2/
 - **Controle de Versão**: ✅ Git com .gitignore
 
 ### Descobertas Importantes
-- **Preprocessador**: Identificada necessidade crítica de fase de preprocessamento
-- **Arquitetura**: Fluxo de compilação redefinido para incluir preprocessamento
-- **Integração**: Interfaces bem definidas entre todas as fases
-- **Especificações**: 25+ páginas de documentação técnica completa
+- **Preprocessador**: ✅ Implementação completa finalizada com sucesso
+- **Arquitetura**: Fluxo de compilação otimizado com preprocessamento integrado
+- **Integração**: Interfaces bem definidas e testadas entre lexer e preprocessador
+- **Especificações**: 30+ páginas de documentação técnica completa
+- **Sistema de Build**: CMake centralizado e otimizado
+- **Testes Abrangentes**: Cobertura completa de casos válidos e inválidos
 
 ---
 
 ## 🔗 Referências e Documentação
 
+### Documentação Geral
 - **[README.md](../README.md)** - Visão geral e instruções de uso
+- **[PROJETO_COMPILADOR_STATUS.md](./PROJETO_COMPILADOR_STATUS.md)** - Este documento
+
+### Analisador Léxico
 - **[ANALISADOR_LEXICO.md](./ANALISADOR_LEXICO.md)** - Especificação técnica do lexer
-- **[ANALISADOR_LEXICO_IMPLEMENTACAO.MD](./ANALISADOR_LEXICO_IMPLEMENTACAO.MD)** - Detalhes de implementação
 - **Código Fonte**: `src/lexer/` - Implementação completa
 - **Testes**: `src/lexer/tests/` - Casos de teste
+
+### Preprocessador
+- **[PREPROCESSADOR_IMPLEMENTACAO.md](./PREPROCESSADOR_IMPLEMENTACAO.md)** - Especificação técnica
+- **[PREPROCESSOR_API_DOCUMENTATION.md](./PREPROCESSOR_API_DOCUMENTATION.md)** - Documentação da API
+- **[PREPROCESSOR_INTEGRATION_GUIDE.md](./PREPROCESSOR_INTEGRATION_GUIDE.md)** - Guia de integração
+- **[PREPROCESSOR_USAGE_EXAMPLES.md](./PREPROCESSOR_USAGE_EXAMPLES.md)** - Exemplos de uso
+- **[PREPROCESSOR_CONFIGURATION.md](./PREPROCESSOR_CONFIGURATION.md)** - Configuração
+- **Código Fonte**: `src/preprocessor/` - Implementação completa
+- **Testes**: `src/preprocessor/tests/` - Casos de teste
+
+### Casos de Teste
+- **test_cases/**: Casos de teste organizados por categoria e padrão C
 
 ---
 
 **Última Atualização**: Janeiro 2025  
-**Próxima Revisão**: Início da Fase 2 (Parser)
+**Próxima Revisão**: Início da Fase 2 (Parser) - Fevereiro 2025
