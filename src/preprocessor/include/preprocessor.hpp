@@ -78,6 +78,12 @@ public:
     void setSearchPaths(const std::vector<std::string>& paths);
     
     /**
+     * @brief Adiciona um caminho de busca para includes
+     * @param path Caminho a ser adicionado
+     */
+    void addIncludePath(const std::string& path);
+    
+    /**
      * @brief Define macro programaticamente
      * @param name Nome da macro
      * @param value Valor da macro

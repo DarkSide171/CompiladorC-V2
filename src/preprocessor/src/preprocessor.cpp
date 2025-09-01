@@ -264,14 +264,95 @@ bool PreprocessorMain::processLine(const std::string& line, int line_number) {
             state_->resetColumn();
         }
         
-        // Verificar se devemos processar esta linha (compilação condicional)
-        if (conditional_processor_ && !conditional_processor_->shouldProcessBlock()) {
-            logger_->debug("Linha ignorada por compilação condicional: " + std::to_string(line_number));
-            return true;
+        // Verificar se é uma diretiva primeiro (diretivas sempre devem ser processadas)
+        // Diretivas podem estar indentadas, então procurar por '#' após espaços em branco
+        std::string trimmed_line = line;
+        size_t first_non_space = trimmed_line.find_first_not_of(" \t");
+        
+        // Debug: log detalhado para verificar detecção de diretivas
+        logger_->info("PROCESSANDO LINHA: '" + line + "'");
+        logger_->info("first_non_space: " + std::to_string(first_non_space));
+        if (first_non_space != std::string::npos) {
+            char first_char = trimmed_line[first_non_space];
+            logger_->info("Primeiro char não-espaço: '" + std::string(1, first_char) + "' (ASCII: " + std::to_string((int)first_char) + ")");
+            logger_->info("Comparação com '#': " + std::string(first_char == '#' ? "true" : "false"));
         }
         
-        // Verificar se é uma diretiva
-        if (line.empty() || line[0] != '#') {
+        bool is_directive = (first_non_space != std::string::npos && trimmed_line[first_non_space] == '#');
+        logger_->info("is_directive: " + std::string(is_directive ? "true" : "false"));
+        
+        if (is_directive) {
+            logger_->info("DIRETIVA DETECTADA: " + line);
+        }
+        
+        if (is_directive) {
+            // Processar diretiva com coordenação integrada
+            try {
+                // Parsear a diretiva
+                Directive directive = parseDirective(line, original_pos);
+                
+                if (!directive.isValid()) {
+                    std::string detailed_error = "[DIRECTIVE_PARSER::parseDirective] Diretiva inválida na linha " + 
+                                               std::to_string(line_number) + ": '" + line + "' (Tipo: " + 
+                                               directiveTypeToString(directive.getType()) + ", Argumentos: " + 
+                                               std::to_string(directive.getArguments().size()) + ")";
+                    handleErrors(detailed_error, original_pos);
+                    return false;
+                }
+                
+                // Processar a diretiva com tratamento de erros integrado
+                bool result = handleDirective(directive);
+                
+                // Atualizar estatísticas de diretivas
+                if (state_ && result) {
+                    state_->setProcessingMode(ProcessingMode::DIRECTIVE);
+                }
+                
+                // IMPORTANTE: Não escrever a linha da diretiva na saída
+                // As diretivas são processadas mas não devem aparecer no código final
+                // (exceto algumas como #line que podem precisar ser preservadas)
+                
+                // Para diretivas condicionais, não escrever na saída - apenas processar o efeito
+                DirectiveType type = directive.getType();
+                if (type == DirectiveType::IF || type == DirectiveType::IFDEF || 
+                    type == DirectiveType::IFNDEF || type == DirectiveType::ELSE || 
+                    type == DirectiveType::ELIF || type == DirectiveType::ENDIF) {
+                    // Diretivas condicionais não devem aparecer na saída final
+                    // Mas adicionar quebra de linha para preservar numeração
+                    writeOutput("\n");
+                    return result;
+                }
+                
+                // Para outras diretivas como #define, também não escrever na saída
+                if (type == DirectiveType::DEFINE || type == DirectiveType::UNDEF) {
+                    // Adicionar quebra de linha para preservar numeração de linhas
+                    writeOutput("\n");
+                    return result;
+                }
+                
+                // Para #include, também preservar numeração
+                if (type == DirectiveType::INCLUDE) {
+                    // Adicionar quebra de linha para preservar numeração de linhas
+                    writeOutput("\n");
+                    return result;
+                }
+                
+                return result;
+                
+            } catch (const std::exception& e) {
+                handleErrors("Erro ao processar diretiva na linha " + std::to_string(line_number) + ": " + std::string(e.what()), original_pos);
+                return false;
+            }
+        } else {
+            // Verificar se devemos processar esta linha normal (compilação condicional)
+            if (conditional_processor_ && !conditional_processor_->shouldProcessBlock()) {
+                logger_->debug("Linha ignorada por compilação condicional: " + std::to_string(line_number));
+                // Para linhas dentro de blocos condicionais falsos, não escrever na saída
+                // mas adicionar quebra de linha para preservar numeração
+                writeOutput("\n");
+                return true;
+            }
+            
             // Linha normal - coordenar processamento entre componentes
             
             // 1. Expandir macros com mapeamento de posições
@@ -306,31 +387,6 @@ bool PreprocessorMain::processLine(const std::string& line, int line_number) {
             return true;
         }
         
-        // Processar diretiva com coordenação integrada
-        try {
-            // Parsear a diretiva
-            Directive directive = parseDirective(line, original_pos);
-            
-            if (!directive.isValid()) {
-                handleErrors("Diretiva inválida na linha " + std::to_string(line_number) + ": " + line, original_pos);
-                return false;
-            }
-            
-            // Processar a diretiva com tratamento de erros integrado
-            bool result = handleDirective(directive);
-            
-            // Atualizar estatísticas de diretivas
-            if (state_ && result) {
-                state_->setProcessingMode(ProcessingMode::DIRECTIVE);
-            }
-            
-            return result;
-            
-        } catch (const std::exception& e) {
-            handleErrors("Erro ao processar diretiva na linha " + std::to_string(line_number) + ": " + std::string(e.what()), original_pos);
-            return false;
-        }
-        
     } catch (const std::exception& e) {
         PreprocessorPosition error_pos(current_file_, line_number, 1);
         handleErrors("Erro no processamento da linha " + std::to_string(line_number) + ": " + std::string(e.what()), error_pos);
@@ -344,55 +400,16 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
         switch (directive.getType()) {
             case DirectiveType::INCLUDE:
                 {
-                    logger_->info("Processando #include: " + directive.getContent());
-                    
+                    // Ignorar diretivas #include - não processar bibliotecas
                     const auto& args = directive.getArguments();
-                    if (args.empty()) {
-                        logger_->error("#include requer um nome de arquivo");
-                        return false;
+                    if (!args.empty()) {
+                        std::string filename = args[0];
+                        logger_->info("Ignorando #include: " + filename + " (processamento de includes desabilitado)");
+                    } else {
+                        logger_->info("Ignorando #include vazio (processamento de includes desabilitado)");
                     }
-                    
-                    std::string filename = args[0];
-                    
-                    // Remover aspas ou brackets do nome do arquivo
-                    if ((filename.front() == '"' && filename.back() == '"') ||
-                        (filename.front() == '<' && filename.back() == '>')) {
-                        filename = filename.substr(1, filename.length() - 2);
-                    }
-                    
-                    // Verificar se o arquivo já foi incluído (evitar inclusão circular)
-                    if (std::find(dependencies_.begin(), dependencies_.end(), filename) != dependencies_.end()) {
-                        logger_->warning("Arquivo já incluído: " + filename);
-                        return true;
-                    }
-                    
-                    // Tentar ler o arquivo
-                     try {
-                         std::string file_content = file_manager_->readFile(filename);
-                         dependencies_.push_back(filename);
-                         
-                         // Processar o conteúdo do arquivo incluído
-                         std::string old_file = current_file_;
-                         size_t old_line = current_line_;
-                         
-                         current_file_ = filename;
-                         current_line_ = 1;
-                         
-                         bool success = processString(file_content);
-                         
-                         current_file_ = old_file;
-                         current_line_ = old_line;
-                         
-                         if (!success) {
-                             logger_->error("Erro ao processar arquivo incluído: " + filename);
-                             return false;
-                         }
-                         
-                         logger_->info("Arquivo incluído com sucesso: " + filename);
-                     } catch (const std::exception& e) {
-                         logger_->error("Não foi possível ler o arquivo: " + filename + " - " + e.what());
-                         return false;
-                     }
+                    // Retornar true para continuar o processamento normalmente
+                    return true;
                 }
                 break;
                 
@@ -400,7 +417,15 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                 {
                     logger_->info("Processando #define: " + directive.getContent());
                     
+                    // Debug: mostrar argumentos parseados
                     const auto& args = directive.getArguments();
+                    std::string debug_args = "Argumentos parseados: [";
+                    for (size_t i = 0; i < args.size(); ++i) {
+                        if (i > 0) debug_args += ", ";
+                        debug_args += "'" + args[i] + "'";
+                    }
+                    debug_args += "]";
+                    logger_->info(debug_args);
                     if (args.empty()) {
                         logger_->error("#define requer um nome de macro");
                         return false;
@@ -425,15 +450,31 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                             }
                         }
                         
-                        // Definir macro com parâmetros
-                        std::string macro_key = base_name;
-                        macro_key += params_str;
-                        macro_processor_->defineMacro(macro_key, macro_value);
+                        // Parsear parâmetros da macro funcional
+                        std::vector<std::string> parameters = macro_processor_->parseParameterList(params_str);
+                        bool isVariadic = false;
                         
-                        std::string log_msg = "Macro com parâmetros definida: ";
+                        // Verificar se é variádica (termina com ...)
+                        if (!parameters.empty() && parameters.back() == "...") {
+                            isVariadic = true;
+                            parameters.pop_back(); // Remove o "..."
+                        }
+                        
+                        // Definir macro funcional usando o método correto
+                        macro_processor_->defineFunctionMacro(base_name, parameters, macro_value, isVariadic);
+                        
+                        std::string log_msg = "Macro funcional definida: ";
                         log_msg += base_name;
-                        log_msg += params_str;
-                        log_msg += " = ";
+                        log_msg += "(";
+                        for (size_t i = 0; i < parameters.size(); ++i) {
+                            if (i > 0) log_msg += ", ";
+                            log_msg += parameters[i];
+                        }
+                        if (isVariadic) {
+                            if (!parameters.empty()) log_msg += ", ";
+                            log_msg += "...";
+                        }
+                        log_msg += ") = ";
                         log_msg += macro_value;
                         logger_->info(log_msg);
                     } else {
@@ -635,6 +676,12 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
 // Escrita na saída
 void PreprocessorMain::writeOutput(const std::string& content) {
     expanded_code_ += content;
+    
+    // DEBUG: Imprimir o que está sendo enviado ao lexer
+    // Output content processed
+    if (!content.empty() && content.back() != '\n') {
+        // Add newline if needed (output disabled for cleaner preprocessor output)
+    }
 }
 
 // Obter código expandido
@@ -673,6 +720,14 @@ void PreprocessorMain::setSearchPaths(const std::vector<std::string>& paths) {
     if (file_manager_) {
         file_manager_->setSearchPaths(paths);
         logger_->info("Caminhos de busca atualizados");
+    }
+}
+
+// Adicionar caminho de busca
+void PreprocessorMain::addIncludePath(const std::string& path) {
+    if (file_manager_) {
+        file_manager_->addSearchPath(path);
+        logger_->info("Caminho de busca adicionado: " + path);
     }
 }
 
@@ -872,8 +927,9 @@ void PreprocessorMain::handleErrors(const std::string& error_msg, const Preproce
         state_->pushState(ProcessingState::ERROR_STATE);
     }
     
-    // 2. Registrar erro com contexto completo
-    reportError(error_msg, pos);
+    // 2. Registrar erro com contexto completo e informações de módulo
+    std::string enhanced_error = "[PREPROCESSOR::PreprocessorMain::handleErrors] " + error_msg;
+    reportError(enhanced_error, pos);
     
     // 3. Tentar recuperação se possível
     attemptErrorRecovery(error_msg, pos);
@@ -1353,8 +1409,14 @@ std::string PreprocessorMain::generateProcessingReport() {
 
 // Método auxiliar para parsear diretivas
 Directive PreprocessorMain::parseDirective(const std::string& line, const PreprocessorPosition& pos) {
+    // Encontrar a posição do '#' (pode estar indentado)
+    size_t hash_pos = line.find('#');
+    if (hash_pos == std::string::npos) {
+        return Directive(DirectiveType::UNKNOWN, line, pos);
+    }
+    
     // Extrair nome da diretiva
-    size_t start = 1; // Pular o #
+    size_t start = hash_pos + 1; // Pular o #
     while (start < line.length() && std::isspace(line[start])) {
         start++;
     }
@@ -1398,6 +1460,59 @@ Directive PreprocessorMain::parseDirective(const std::string& line, const Prepro
                     break;
                     
                 case DirectiveType::DEFINE:
+                    // Para #define, tratar de forma especial para preservar macros funcionais
+                    {
+                        // Verificar se é uma macro funcional (tem parênteses)
+                        size_t paren_pos = args_str.find('(');
+                        size_t space_pos = args_str.find_first_of(" \t");
+                        
+                        if (paren_pos != std::string::npos && 
+                            (space_pos == std::string::npos || paren_pos < space_pos)) {
+                            // É uma macro funcional - encontrar o ')' correspondente
+                            size_t close_paren = args_str.find(')', paren_pos);
+                            if (close_paren != std::string::npos) {
+                                // Macro funcional completa: nome + parâmetros
+                                std::string macro_name = args_str.substr(0, close_paren + 1);
+                                arguments.push_back(macro_name);
+                                
+                                // Pular espaços após os parênteses
+                                size_t value_start = close_paren + 1;
+                                while (value_start < args_str.length() && 
+                                       (args_str[value_start] == ' ' || args_str[value_start] == '\t')) {
+                                    value_start++;
+                                }
+                                
+                                if (value_start < args_str.length()) {
+                                    std::string macro_value = args_str.substr(value_start);
+                                    arguments.push_back(macro_value);
+                                }
+                            } else {
+                                // Parênteses não fechados - tratar como macro simples
+                                arguments.push_back(args_str);
+                            }
+                        } else if (space_pos != std::string::npos) {
+                            // Macro simples com valor
+                            std::string macro_name = args_str.substr(0, space_pos);
+                            arguments.push_back(macro_name);
+                            
+                            // Pular espaços/tabs
+                            size_t value_start = space_pos;
+                            while (value_start < args_str.length() && 
+                                   (args_str[value_start] == ' ' || args_str[value_start] == '\t')) {
+                                value_start++;
+                            }
+                            
+                            if (value_start < args_str.length()) {
+                                std::string macro_value = args_str.substr(value_start);
+                                arguments.push_back(macro_value);
+                            }
+                        } else {
+                            // Apenas o nome da macro (sem valor)
+                            arguments.push_back(args_str);
+                        }
+                    }
+                    break;
+                    
                 case DirectiveType::UNDEF:
                 case DirectiveType::IFDEF:
                 case DirectiveType::IFNDEF:

@@ -85,12 +85,47 @@ bool LexerPreprocessorBridge::processFile(const std::string& filename) {
         std::cout << "[DEBUG] Resultado do processamento: hasErrors=" << lastProcessingResult.hasErrors << std::endl;
         
         if (lastProcessingResult.hasErrors) {
-            std::cout << "[DEBUG] Processamento falhou com erros" << std::endl;
-            return false;
+            std::cout << "[DEBUG] Processamento falhou com erros - implementando fallback para código original" << std::endl;
+            
+            // FALLBACK: Ler e processar código original sem pré-processamento
+            std::ifstream file(filename);
+            if (!file.is_open()) {
+                std::cout << "[DEBUG] Erro: não foi possível abrir arquivo para fallback" << std::endl;
+                return false;
+            }
+            
+            std::string originalCode((std::istreambuf_iterator<char>(file)),
+                                   std::istreambuf_iterator<char>());
+            file.close();
+            
+            std::cout << "[DEBUG] FALLBACK: Processando código original sem pré-processamento" << std::endl;
+            std::cout << "[DEBUG] Código original tem " << originalCode.length() << " caracteres" << std::endl;
+            
+            // Limpar resultado anterior e configurar para código original
+            lastProcessingResult.processedCode = originalCode;
+            lastProcessingResult.hasErrors = true; // Manter flag de erro para indicar que houve problemas no pré-processamento
+            
+            // Inicializar lexer com código original
+            codeStream = std::make_unique<std::istringstream>(originalCode);
+            lexer = std::make_unique<Lexer::LexerMain>(*codeStream, errorHandler.get(), filename);
+            
+            // Construir tokens integrados (sem mapeamentos do pré-processador)
+            buildIntegratedTokens();
+            
+            hasProcessedInput = true;
+            currentTokenIndex = 0;
+            
+            std::cout << "[DEBUG] FALLBACK: Processamento do código original concluído" << std::endl;
+            return true; // Retorna true para permitir análise léxica do código original
         }
+        
         std::cout << "[DEBUG] Processamento bem-sucedido, código processado tem " << lastProcessingResult.processedCode.length() << " caracteres" << std::endl;
         
-
+        // DEBUG: Imprimir o código processado completo
+        std::cout << "[DEBUG] CÓDIGO PROCESSADO PELO PREPROCESSOR:" << std::endl;
+        std::cout << "========================================" << std::endl;
+        std::cout << lastProcessingResult.processedCode << std::endl;
+        std::cout << "========================================" << std::endl;
         
         // Inicializar lexer com código processado
         codeStream = std::make_unique<std::istringstream>(lastProcessingResult.processedCode);
@@ -315,8 +350,40 @@ bool LexerPreprocessorBridge::initializeComponents() {
 
 void LexerPreprocessorBridge::setupErrorIntegration() {
     // Configurar integração de erros entre preprocessor e lexer
-    if (preprocessorInterface && errorHandler) {
-        // Implementar sincronização de erros
+    if (preprocessorInterface && errorHandler && config.enableErrorIntegration) {
+        // Conectar o ErrorHandler do lexer com o external_error_handler do preprocessor
+        // através da interface que já possui IntegratedErrorHandler
+        
+        // O preprocessorInterface já configura automaticamente o errorHandler
+        // no preprocessor através do método processFile/processString
+        
+        // Configurar callback para capturar erros do preprocessor e repassar ao lexer
+        preprocessorInterface->setOnError([this](const Preprocessor::IntegratedErrorHandler::IntegratedError& error) {
+            if (errorHandler) {
+                // Converter erro integrado para formato do lexer
+                std::string errorMsg = "[Preprocessor] " + error.message;
+                
+                // Reportar erro ao ErrorHandler do lexer
+                Lexer::Position pos;
+                pos.line = static_cast<int>(error.originalLine);
+                pos.column = static_cast<int>(error.originalColumn);
+                pos.offset = 0; // Não temos informação de offset
+                
+                if (error.source == Preprocessor::IntegratedErrorHandler::ErrorSource::PREPROCESSOR) {
+                    errorHandler->reportError(Lexer::ErrorType::INVALID_CHARACTER, 
+                                            errorMsg, 
+                                            pos,
+                                            error.originalFile);
+                } else {
+                    errorHandler->reportError(Lexer::ErrorType::INTERNAL_ERROR, 
+                                            errorMsg, 
+                                            pos,
+                                            error.originalFile);
+                }
+            }
+        });
+        
+        std::cout << "[DEBUG] Integração de erros configurada entre preprocessor e lexer" << std::endl;
     }
 }
 

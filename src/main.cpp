@@ -620,8 +620,10 @@ bool processFile(const std::string& filename, OutputFormat format = OutputFormat
         // Verificar se há erros críticos do pré-processador
         bool hasPreprocessorErrors = bridge.hasErrors();
         
-        if (!processingSuccess && hasPreprocessorErrors) {
-            std::cerr << Colors::RED << "❌ Erro crítico no pré-processador - interrompendo processamento" << Colors::RESET << std::endl;
+        // Com o fallback implementado, não interrompemos mais o processamento
+        // O bridge agora processa o código original quando há erros no pré-processador
+        if (!processingSuccess) {
+            std::cerr << Colors::RED << "❌ Erro crítico no pipeline - interrompendo processamento" << Colors::RESET << std::endl;
             
             // Ainda assim, exibir informações do pré-processador para debug
             if (format == OutputFormat::VERBOSE) {
@@ -631,6 +633,21 @@ bool processFile(const std::string& filename, OutputFormat format = OutputFormat
             }
             
             return true;
+        }
+        
+        // Se há erros do pré-processador mas o processamento continuou, significa que o fallback foi usado
+        if (hasPreprocessorErrors) {
+            std::cout << Colors::YELLOW << "⚠️  Pré-processamento falhou - usando código original para análise léxica" << Colors::RESET << std::endl;
+            
+            // Exibir o código original que está sendo usado
+            const auto& result = bridge.getLastProcessingResult();
+            if (!result.processedCode.empty()) {
+                std::cout << "\n" << std::string(80, '=') << std::endl;
+                std::cout << Colors::CYAN << "CÓDIGO ORIGINAL (FALLBACK):" << Colors::RESET << std::endl;
+                std::cout << std::string(80, '=') << std::endl;
+                std::cout << result.processedCode << std::endl;
+                std::cout << std::string(80, '=') << std::endl;
+            }
         }
         
         // Exibir informações detalhadas do pré-processador

@@ -147,7 +147,6 @@ int main(void)
     printf("C11 Support: %s\n", HAS_C11 ? "YES" : "NO");
     
     // Teste de logging
-    LOG(1, "Starting application");
     INFO("Application initialized");
     TRACE("Entering main function");
     
@@ -196,7 +195,6 @@ int main(void)
     #endif
     
     TRACE("Exiting main function");
-    LOG(1, "Application finished successfully");
     
     return 0;
 }

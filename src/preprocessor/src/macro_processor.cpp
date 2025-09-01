@@ -134,12 +134,12 @@ MacroProcessor::~MacroProcessor() {
 bool MacroProcessor::defineMacro(const std::string& name, const std::string& value,
                                 const Preprocessor::PreprocessorPosition& position) {
     if (!validateMacroName(name)) {
-        logMacroError("Nome de macro inválido: " + name, position);
+        logMacroError("[MACRO_PROCESSOR::MacroProcessor::defineMacro] Nome de macro inválido: '" + name + "' - deve começar com letra ou underscore e conter apenas caracteres alfanuméricos", position);
         return false;
     }
     
     if (!validateMacroValue(value)) {
-        logMacroError("Valor de macro inválido para: " + name, position);
+        logMacroError("[MACRO_PROCESSOR::MacroProcessor::defineMacro] Valor de macro inválido para '" + name + "': '" + value + "'", position);
         return false;
     }
     
@@ -175,17 +175,24 @@ bool MacroProcessor::defineFunctionMacro(const std::string& name,
                                         bool isVariadic,
                                         const Preprocessor::PreprocessorPosition& position) {
     if (!validateMacroName(name)) {
-        logMacroError("Nome de macro inválido: " + name, position);
+        logMacroError("[MACRO_PROCESSOR::MacroProcessor::defineFunctionMacro] Nome de macro inválido: '" + name + "' - deve começar com letra ou underscore e conter apenas caracteres alfanuméricos", position);
         return false;
     }
     
     if (!validateParameters(parameters)) {
-        logMacroError("Parâmetros inválidos para macro: " + name, position);
+        std::ostringstream oss;
+        oss << "[MACRO_PROCESSOR::MacroProcessor::defineFunctionMacro] Parâmetros inválidos para macro '" << name << "': [";
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << "'" << parameters[i] << "'";
+        }
+        oss << "] - parâmetros devem ser identificadores válidos";
+        logMacroError(oss.str(), position);
         return false;
     }
     
     if (!validateMacroValue(body)) {
-        logMacroError("Corpo de macro inválido para: " + name, position);
+        logMacroError("[MACRO_PROCESSOR::MacroProcessor::defineFunctionMacro] Corpo de macro inválido para '" + name + "': '" + body + "'", position);
         return false;
     }
     
@@ -281,7 +288,7 @@ std::string MacroProcessor::expandMacro(const std::string& name) {
     }
     
     if (!expansionContext_.canExpand(name)) {
-        logMacroError("Recursão infinita detectada na macro: " + name);
+        logMacroError("[MACRO_PROCESSOR::MacroProcessor::expandMacro] Recursão infinita detectada na macro '" + name + "' - profundidade máxima de expansão excedida");
         return name;
     }
     
@@ -329,16 +336,22 @@ std::string MacroProcessor::expandFunctionMacro(const std::string& name,
     const MacroInfo& info = macros_[name];
     
     if (!info.isFunctionLike()) {
-        logMacroError("Tentativa de chamar macro não-funcional como função: " + name);
+        logMacroError("[MACRO_PROCESSOR::MacroProcessor::expandFunctionMacro] Tentativa de chamar macro não-funcional '" + name + "' como função - macro é do tipo OBJECT_LIKE");
         return name;
     }
     
     if (!validateParameterCount(name, arguments.size())) {
+        const MacroInfo& info = macros_[name];
+        if (info.isVariadic) {
+            logMacroError("[MACRO_PROCESSOR::MacroProcessor::expandFunctionMacro] Macro variádica '" + name + "' requer pelo menos " + std::to_string(info.parameters.size()) + " argumentos, mas recebeu " + std::to_string(arguments.size()));
+        } else {
+            logMacroError("[MACRO_PROCESSOR::MacroProcessor::expandFunctionMacro] Macro '" + name + "' requer exatamente " + std::to_string(info.parameters.size()) + " argumentos, mas recebeu " + std::to_string(arguments.size()));
+        }
         return name;
     }
     
     if (!expansionContext_.canExpand(name)) {
-        logMacroError("Recursão infinita detectada na macro: " + name);
+        logMacroError("[MACRO_PROCESSOR::MacroProcessor::expandFunctionMacro] Recursão infinita detectada na macro '" + name + "' - profundidade máxima de expansão excedida");
         return name;
     }
     
@@ -376,6 +389,8 @@ std::string MacroProcessor::expandMacroRecursively(const std::string& text) {
         return text;
     }
     
+
+    
     // Otimização: verifica cache primeiro para texto completo
     if (cacheEnabled_) {
         std::string textCacheKey = "__recursive_" + std::to_string(std::hash<std::string>{}(text));
@@ -400,6 +415,8 @@ std::string MacroProcessor::expandMacroRecursively(const std::string& text) {
         size_t macroPos = macroInfo.first;
         const std::string& macroName = macroInfo.second;
         
+
+        
         // Verifica se está dentro de string literal ou comentário
         if (isInsideStringLiteral(result, macroPos) || isInsideComment(result, macroPos)) {
             pos = macroPos + macroName.length();
@@ -412,7 +429,56 @@ std::string MacroProcessor::expandMacroRecursively(const std::string& text) {
             continue;
         }
         
-        // Expande a macro
+        // Verifica se é uma macro funcional e se há argumentos
+        const MacroInfo* info = getMacroInfo(macroName);
+        if (info && info->isFunctionLike()) {
+            // Procura por '(' após o nome da macro
+            size_t parenPos = macroPos + macroName.length();
+            // Pula espaços em branco
+            while (parenPos < result.length() && std::isspace(result[parenPos])) {
+                parenPos++;
+            }
+            
+            if (parenPos < result.length() && result[parenPos] == '(') {
+                // Encontra o ')' correspondente
+                size_t argStart = parenPos + 1;
+                size_t parenCount = 1;
+                size_t argEnd = argStart;
+                
+                while (argEnd < result.length() && parenCount > 0) {
+                    if (result[argEnd] == '(') {
+                        parenCount++;
+                    } else if (result[argEnd] == ')') {
+                        parenCount--;
+                    }
+                    if (parenCount > 0) {
+                        argEnd++;
+                    }
+                }
+                
+                if (parenCount == 0) {
+                    // Extrai os argumentos
+                    std::string argString = result.substr(argStart, argEnd - argStart);
+                    std::vector<std::string> arguments = parseArgumentList(argString);
+                    
+                    // Expande a macro funcional
+                    std::string expansion = expandFunctionMacro(macroName, arguments);
+                    
+                    // Substitui toda a chamada da macro (nome + argumentos)
+                    size_t totalLength = argEnd + 1 - macroPos;
+                    result.replace(macroPos, totalLength, expansion);
+                    pos = macroPos + expansion.length();
+                    hasExpansions = true;
+                    continue;
+                }
+            }
+            
+            // Se não encontrou argumentos, pula a macro
+            pos = macroPos + macroName.length();
+            continue;
+        }
+        
+        // Expande macro simples
         std::string expansion = expandMacro(macroName);
         if (expansion != macroName) {
             result.replace(macroPos, macroName.length(), expansion);
@@ -582,18 +648,42 @@ std::string MacroProcessor::expandVariadicArguments(const std::vector<std::strin
 std::vector<std::string> MacroProcessor::parseParameterList(const std::string& parameterList) {
     std::vector<std::string> parameters;
     
+    if (logger_) {
+        logger_->debug("parseParameterList recebeu: '" + parameterList + "'");
+    }
+    
     if (parameterList.empty()) {
         return parameters;
     }
     
-    std::istringstream iss(parameterList);
+    // Remover parênteses se presentes
+    std::string cleanParams = parameterList;
+    if (cleanParams.front() == '(' && cleanParams.back() == ')') {
+        cleanParams = cleanParams.substr(1, cleanParams.length() - 2);
+        if (logger_) {
+            logger_->debug("Parâmetros após remoção de parênteses: '" + cleanParams + "'");
+        }
+    }
+    
+    if (cleanParams.empty()) {
+        return parameters; // Macro sem parâmetros: MACRO()
+    }
+    
+    std::istringstream iss(cleanParams);
     std::string param;
     
     while (std::getline(iss, param, ',')) {
         param = trimWhitespace(param);
         if (!param.empty()) {
             parameters.push_back(param);
+            if (logger_) {
+                logger_->debug("Parâmetro adicionado: '" + param + "'");
+            }
         }
+    }
+    
+    if (logger_) {
+        logger_->debug("Total de parâmetros encontrados: " + std::to_string(parameters.size()));
     }
     
     return parameters;
@@ -1148,14 +1238,16 @@ std::string MacroProcessor::generateCacheKey(const std::string& macroName,
 void MacroProcessor::logMacroError(const std::string& message,
                                   const Preprocessor::PreprocessorPosition& position) {
     if (logger_) {
-        logger_->error(message, position);
+        std::string contextualMessage = "[MACRO_PROCESSOR::MacroProcessor] " + message;
+        logger_->error(contextualMessage, position);
     }
 }
 
 void MacroProcessor::logMacroWarning(const std::string& message,
                                     const Preprocessor::PreprocessorPosition& position) {
     if (logger_) {
-        logger_->warning(message, position);
+        std::string contextualMessage = "[MACRO_PROCESSOR::MacroProcessor] " + message;
+        logger_->warning(contextualMessage, position);
     }
 }
 

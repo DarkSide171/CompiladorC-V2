@@ -45,13 +45,14 @@ bool Directive::validateSyntax() const {
         return false;
     }
     
-    // Deve começar com #
-    if (content_[0] != '#') {
+    // Encontrar o # (pode estar após espaços)
+    size_t hash_pos = content_.find('#');
+    if (hash_pos == std::string::npos) {
         return false;
     }
     
     // Extrair nome da diretiva
-    size_t start = 1;
+    size_t start = hash_pos + 1;
     while (start < content_.length() && std::isspace(content_[start])) {
         start++;
     }
@@ -344,39 +345,68 @@ bool DirectiveProcessor::validateDirectiveSyntax(const Directive& directive) {
         
         // Verificar se diretiva é conhecida
         if (type == DirectiveType::UNKNOWN) {
+            logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Tipo de diretiva desconhecido: '" + 
+                          directive.getContent() + "' na posição " + directive.getPosition().filename + ":" + 
+                          std::to_string(directive.getPosition().line));
             return false;
         }
         
         // Verificar argumentos obrigatórios
         if (requiresArguments(type) && args.empty()) {
+            logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Diretiva '" + 
+                          directiveTypeToString(type) + "' requer argumentos mas nenhum foi fornecido na posição " + 
+                          directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
             return false;
         }
         
         // Validações específicas por tipo
         switch (type) {
             case DirectiveType::INCLUDE:
-                if (args.size() != 1) return false;
+                if (args.size() != 1) {
+                    logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Diretiva INCLUDE deve ter exatamente 1 argumento, mas tem " + 
+                                  std::to_string(args.size()) + " na posição " + directive.getPosition().filename + ":" + 
+                                  std::to_string(directive.getPosition().line));
+                    return false;
+                }
                 // Verificar se tem < > ou " "
                 {
                     std::string filename = args[0];
-                    if (filename.empty()) return false;
+                    if (filename.empty()) {
+                        logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Nome do arquivo vazio na diretiva INCLUDE na posição " + 
+                                      directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
+                        return false;
+                    }
                     if (!((filename.front() == '<' && filename.back() == '>') ||
                           (filename.front() == '"' && filename.back() == '"'))) {
+                        logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Nome do arquivo '" + filename + 
+                                      "' deve estar entre < > ou \" \" na diretiva INCLUDE na posição " + 
+                                      directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
                         return false;
                     }
                 }
                 break;
                 
             case DirectiveType::DEFINE:
-                if (args.empty() || args.size() > 2) return false;
+                if (args.empty() || args.size() > 2) {
+                    logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Diretiva DEFINE deve ter 1 ou 2 argumentos, mas tem " + 
+                                  std::to_string(args.size()) + " na posição " + directive.getPosition().filename + ":" + 
+                                  std::to_string(directive.getPosition().line));
+                    return false;
+                }
                 // Verificar se nome da macro é válido
                 {
                     std::string macro_name = args[0];
                     if (macro_name.empty() || !std::isalpha(macro_name[0]) && macro_name[0] != '_') {
+                        logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Nome da macro '" + macro_name + 
+                                      "' inválido na diretiva DEFINE (deve começar com letra ou _) na posição " + 
+                                      directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
                         return false;
                     }
                     for (char c : macro_name) {
                         if (!std::isalnum(c) && c != '_') {
+                            logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Nome da macro '" + macro_name + 
+                                          "' contém caractere inválido '" + c + "' na diretiva DEFINE na posição " + 
+                                          directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
                             return false;
                         }
                     }
@@ -386,11 +416,20 @@ bool DirectiveProcessor::validateDirectiveSyntax(const Directive& directive) {
             case DirectiveType::UNDEF:
             case DirectiveType::IFDEF:
             case DirectiveType::IFNDEF:
-                if (args.size() != 1) return false;
+                if (args.size() != 1) {
+                    logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Diretiva " + directiveTypeToString(type) + 
+                                  " deve ter exatamente 1 argumento, mas tem " + std::to_string(args.size()) + 
+                                  " na posição " + directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
+                    return false;
+                }
                 // Verificar se nome da macro é válido
                 {
                     std::string macro_name = args[0];
                     if (macro_name.empty() || !std::isalpha(macro_name[0]) && macro_name[0] != '_') {
+                        logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Nome da macro '" + macro_name + 
+                                      "' inválido na diretiva " + directiveTypeToString(type) + 
+                                      " (deve começar com letra ou _) na posição " + 
+                                      directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
                         return false;
                     }
                 }
@@ -398,12 +437,22 @@ bool DirectiveProcessor::validateDirectiveSyntax(const Directive& directive) {
                 
             case DirectiveType::ELSE:
             case DirectiveType::ENDIF:
-                if (!args.empty()) return false;
+                if (!args.empty()) {
+                    logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Diretiva " + directiveTypeToString(type) + 
+                                  " não deve ter argumentos, mas tem " + std::to_string(args.size()) + 
+                                  " na posição " + directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
+                    return false;
+                }
                 break;
                 
             case DirectiveType::IF:
             case DirectiveType::ELIF:
-                if (args.size() != 1 || args[0].empty()) return false;
+                if (args.size() != 1 || args[0].empty()) {
+                    logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Diretiva " + directiveTypeToString(type) + 
+                                  " deve ter exatamente 1 argumento não vazio, mas tem " + std::to_string(args.size()) + 
+                                  " argumentos na posição " + directive.getPosition().filename + ":" + std::to_string(directive.getPosition().line));
+                    return false;
+                }
                 break;
                 
             case DirectiveType::ERROR:
@@ -414,11 +463,17 @@ bool DirectiveProcessor::validateDirectiveSyntax(const Directive& directive) {
                 break;
                 
             default:
+                logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Tipo de diretiva não suportado: " + 
+                              directiveTypeToString(type) + " na posição " + directive.getPosition().filename + ":" + 
+                              std::to_string(directive.getPosition().line));
                 return false;
         }
         
         // Validar contexto
         if (!validateDirectiveContext(type)) {
+            logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Contexto inválido para diretiva " + 
+                          directiveTypeToString(type) + " na posição " + directive.getPosition().filename + ":" + 
+                          std::to_string(directive.getPosition().line));
             return false;
         }
         
@@ -426,7 +481,9 @@ bool DirectiveProcessor::validateDirectiveSyntax(const Directive& directive) {
         
     } catch (const std::exception& e) {
         if (logger_) {
-            logger_->error("Erro na validação de sintaxe: " + std::string(e.what()));
+            logger_->error("[DIRECTIVE_VALIDATOR::validateDirectiveSyntax] Exceção durante validação: " + 
+                          std::string(e.what()) + " na posição " + directive.getPosition().filename + ":" + 
+                          std::to_string(directive.getPosition().line));
         }
         return false;
     }
@@ -468,10 +525,30 @@ bool DirectiveProcessor::validateDirectiveSyntax(const Directive& directive) {
         bool success = false;
         
         try {
-            file_content = file_manager_->readFile(clean_filename);
-            success = !file_content.empty();
+            // Primeiro resolve o caminho do include usando os search paths
+            bool is_system = (filename.front() == '<' && filename.back() == '>');
+            
+            if (logger_) {
+                logger_->info("[DEBUG] processIncludeDirective: filename='" + filename + "', clean_filename='" + clean_filename + "', is_system=" + (is_system ? "true" : "false"));
+            }
+            
+            std::string resolved_path = file_manager_->resolveInclude(clean_filename, is_system, "");
+            
+            if (logger_) {
+                logger_->info("[DEBUG] resolveInclude retornou: '" + resolved_path + "'");
+            }
+            
+            if (!resolved_path.empty()) {
+                file_content = file_manager_->readFile(resolved_path);
+                success = !file_content.empty();
+            } else {
+                success = false;
+            }
         } catch (const std::exception& e) {
             // Arquivo não encontrado ou erro de leitura
+            if (logger_) {
+                logger_->error("[DEBUG] Exceção em processIncludeDirective: " + std::string(e.what()));
+            }
             success = false;
         }
          
@@ -1126,6 +1203,24 @@ void DirectiveProcessor::handleDirectiveErrors(const std::string& error_message,
          // Remover o #
          trimmed = trimmed.substr(1);
          
+         // Remover comentários antes de extrair o nome
+         size_t comment_pos = trimmed.find("//");
+         if (comment_pos != std::string::npos) {
+             trimmed = trimmed.substr(0, comment_pos);
+         }
+         
+         // Remover comentários de bloco
+         size_t block_comment_start = trimmed.find("/*");
+         if (block_comment_start != std::string::npos) {
+             trimmed = trimmed.substr(0, block_comment_start);
+         }
+         
+         // Remover espaços no final após remoção de comentários
+         size_t end_trim = trimmed.find_last_not_of(" \t\n\r");
+         if (end_trim != std::string::npos) {
+             trimmed = trimmed.substr(0, end_trim + 1);
+         }
+         
          // Encontrar o nome da diretiva
          size_t end = trimmed.find_first_of(" \t\n\r");
          if (end == std::string::npos) {
@@ -1168,6 +1263,23 @@ void DirectiveProcessor::handleDirectiveErrors(const std::string& error_message,
          
          // Extrair argumentos até o final da linha
          std::string args = line.substr(args_start);
+         
+         // Remover comentários C-style (/* ... */) e comentários de linha (//)
+         size_t block_comment_start = args.find("/*");
+         size_t line_comment_start = args.find("//");
+         
+         size_t comment_start = std::string::npos;
+         if (block_comment_start != std::string::npos && line_comment_start != std::string::npos) {
+             comment_start = std::min(block_comment_start, line_comment_start);
+         } else if (block_comment_start != std::string::npos) {
+             comment_start = block_comment_start;
+         } else if (line_comment_start != std::string::npos) {
+             comment_start = line_comment_start;
+         }
+         
+         if (comment_start != std::string::npos) {
+             args = args.substr(0, comment_start);
+         }
          
          // Remover espaços no final
          size_t end = args.find_last_not_of(" \t\n\r");

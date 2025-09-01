@@ -29,8 +29,11 @@ long long ExpressionEvaluator::evaluateExpression(const std::string& expression,
             throw std::invalid_argument("Expression cannot be empty");
         }
         
-        // Tokenizar a expressão
-        auto tokens = tokenizeExpression(expression);
+        // Expandir macros na expressão antes de tokenizar
+        std::string expandedExpression = expandMacrosInExpression(expression, pos);
+        
+        // Tokenizar a expressão expandida
+        auto tokens = tokenizeExpression(expandedExpression);
         
         if (tokens.empty()) {
             throw std::invalid_argument("No valid tokens found in expression");
@@ -759,21 +762,35 @@ std::string ExpressionEvaluator::expandMacrosInExpression(const std::string& exp
     // Tokenizar para encontrar identificadores
     auto tokens = tokenizeExpression(expression);
     
+    // Substituir macros na string original
     for (const auto& token : tokens) {
-         if (token.type == ExpressionTokenType::IDENTIFIER) {
-             // Verificar se é uma macro definida e expandir se necessário
-              if (macroProcessor && macroProcessor->isDefined(token.value)) {
-                  std::string expanded = macroProcessor->expandMacro(token.value);
-                  // Substituir o identificador pela expansão da macro
-                  result += expanded;
-              } else {
-                  // Manter identificador como está se não for uma macro
-                  result += token.value;
-              }
-         } else {
-             result += token.value;
-         }
-     }
+        if (token.type == ExpressionTokenType::IDENTIFIER) {
+            // Verificar se é uma macro definida e expandir se necessário
+            if (macroProcessor && macroProcessor->isDefined(token.value)) {
+                std::string expanded = macroProcessor->expandMacro(token.value);
+                // Substituir todas as ocorrências do identificador pela expansão da macro
+                size_t pos = 0;
+                while ((pos = result.find(token.value, pos)) != std::string::npos) {
+                    // Verificar se é uma palavra completa (não parte de outro identificador)
+                    bool isWordBoundary = true;
+                    if (pos > 0 && (std::isalnum(result[pos-1]) || result[pos-1] == '_')) {
+                        isWordBoundary = false;
+                    }
+                    if (pos + token.value.length() < result.length() && 
+                        (std::isalnum(result[pos + token.value.length()]) || result[pos + token.value.length()] == '_')) {
+                        isWordBoundary = false;
+                    }
+                    
+                    if (isWordBoundary) {
+                        result.replace(pos, token.value.length(), expanded);
+                        pos += expanded.length();
+                    } else {
+                        pos += token.value.length();
+                    }
+                }
+            }
+        }
+    }
     
     return result;
 }

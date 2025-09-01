@@ -31,10 +31,10 @@ char bad_escape1 = '\q';
 char bad_escape2 = '\999';
 
 // ERRO: Strings malformadas
-char *unclosed_string = "This string is never closed
+char *unclosed_string = "This string is never closed"
 
 // ERRO: Comentário não fechado
-/* Este comentário nunca é fechado
+ Este comentário nunca é fechado
    e continua indefinidamente...
 
 struct BadStruct {
@@ -67,7 +67,7 @@ int test_operators(int a, int b) {
 
 // ERRO: Literais de caractere inválidos
 char bad_chars[] = {
-    '',      // ERRO: Caractere vazio
+    ''',      // ERRO: Caractere vazio
     'abc',   // ERRO: Múltiplos caracteres
     'x       // ERRO: Não fechado
 };

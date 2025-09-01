@@ -139,7 +139,7 @@ std::string FileManager::readFile(const std::string& filepath) {
 
 bool FileManager::writeFile(const std::string& filepath, const std::string& content) {
     if (filepath.empty()) {
-        logError("Caminho de arquivo vazio para escrita");
+        logError("[writeFile] Caminho de arquivo vazio para escrita");
         return false;
     }
     
@@ -162,7 +162,7 @@ bool FileManager::writeFile(const std::string& filepath, const std::string& cont
         // Escreve o arquivo
         std::ofstream file(normalized_path, std::ios::binary);
         if (!file.is_open()) {
-            logError("Não foi possível criar o arquivo: " + normalized_path);
+            logError("[writeFile] Não foi possível criar o arquivo", normalized_path);
             return false;
         }
         
@@ -185,7 +185,7 @@ bool FileManager::writeFile(const std::string& filepath, const std::string& cont
         return true;
         
     } catch (const std::exception& e) {
-        logError("Erro ao escrever arquivo " + normalized_path + ": " + e.what());
+        logError("[writeFile] Erro ao escrever arquivo: " + std::string(e.what()), normalized_path);
         return false;
     }
 }
@@ -212,7 +212,13 @@ std::string FileManager::resolveInclude(const std::string& filename,
                                        bool is_system, 
                                        const std::string& current_file) {
     if (filename.empty()) {
+        logError("[resolveInclude] Nome de arquivo vazio para inclusão");
         throw std::runtime_error("Nome de arquivo vazio para inclusão");
+    }
+    
+    if (logger_) {
+        logInfo("[DEBUG] resolveInclude chamado para: " + filename + ", is_system: " + (is_system ? "true" : "false"));
+        logInfo("[DEBUG] search_paths_ tem " + std::to_string(search_paths_.size()) + " caminhos");
     }
     
     stats_.path_resolutions++;
@@ -221,6 +227,9 @@ std::string FileManager::resolveInclude(const std::string& filename,
     
     if (is_system) {
         // Para inclusões de sistema (<>), busca apenas nos caminhos de sistema
+        if (logger_) {
+            logInfo("[DEBUG] Buscando include de sistema nos caminhos configurados");
+        }
         resolved_path = searchInPaths(filename, search_paths_);
     } else {
         // Para inclusões locais (""), busca primeiro no diretório do arquivo atual
@@ -244,6 +253,7 @@ std::string FileManager::resolveInclude(const std::string& filename,
     }
     
     if (resolved_path.empty()) {
+        logError("[resolveInclude] Arquivo de inclusão não encontrado", filename);
         throw std::runtime_error("Arquivo de inclusão não encontrado: " + filename);
     }
     
@@ -315,10 +325,10 @@ bool FileManager::checkCircularInclusion(const std::string& filepath,
             stats_.circular_inclusions++;
             
             if (logger_) {
-                logWarning("Inclusão circular detectada: " + normalized_path);
-                logWarning("Pilha de inclusões:");
+                logWarning("[checkCircularInclusion] Inclusão circular detectada", normalized_path);
+                logWarning("[checkCircularInclusion] Pilha de inclusões:");
                 for (size_t i = 0; i < include_stack.size(); ++i) {
-                    logWarning("  [" + std::to_string(i) + "] " + include_stack[i]);
+                    logWarning("[checkCircularInclusion]   [" + std::to_string(i) + "] " + include_stack[i]);
                 }
             }
             
@@ -773,14 +783,28 @@ void FileManager::handleFileSystemEvents(const std::string& event_type, const st
 
 std::string FileManager::searchInPaths(const std::string& filename, 
                                       const std::vector<std::string>& paths) const {
+    if (logger_) {
+        logInfo("Buscando arquivo: " + filename + " em " + std::to_string(paths.size()) + " caminhos");
+    }
+    
     for (const auto& search_path : paths) {
         std::string full_path = resolveRelativePath(filename, search_path);
         
+        if (logger_) {
+            logInfo("Testando caminho: " + full_path);
+        }
+        
         if (fileExists(full_path)) {
+            if (logger_) {
+                logInfo("Arquivo encontrado em: " + full_path);
+            }
             return full_path;
         }
     }
     
+    if (logger_) {
+        logError("Arquivo não encontrado: " + filename);
+    }
     return ""; // Não encontrado
 }
 
@@ -922,20 +946,22 @@ void FileManager::updateDependencies(const std::string& filepath) {
 
 void FileManager::logError(const std::string& message, const std::string& filepath) const {
     if (logger_) {
+        std::string context_message = "[FILE_MANAGER::FileManager] " + message;
         if (filepath.empty()) {
-            logger_->error(message);
+            logger_->error(context_message);
         } else {
-            logger_->error(message + " [" + filepath + "]");
+            logger_->error(context_message + " [" + filepath + "]");
         }
     }
 }
 
 void FileManager::logWarning(const std::string& message, const std::string& filepath) const {
     if (logger_) {
+        std::string context_message = "[FILE_MANAGER::FileManager] " + message;
         if (filepath.empty()) {
-            logger_->warning(message);
+            logger_->warning(context_message);
         } else {
-            logger_->warning(message + " [" + filepath + "]");
+            logger_->warning(context_message + " [" + filepath + "]");
         }
     }
 }

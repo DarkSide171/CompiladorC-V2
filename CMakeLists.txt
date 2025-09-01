@@ -33,6 +33,17 @@ target_include_directories(CompiladorC PRIVATE
     src/preprocessor/include
 )
 
+# Criar executável apenas para o pré-processador
+add_executable(PreprocessorOnly src/main_preprocessor_only.cpp)
+
+# Linkar apenas com a biblioteca do preprocessor
+target_link_libraries(PreprocessorOnly PRIVATE preprocessor)
+
+# Configurar diretórios de include para o executável do preprocessor
+target_include_directories(PreprocessorOnly PRIVATE
+    src/preprocessor/include
+)
+
 # Habilitar testes
 enable_testing()
 

@@ -134,9 +134,7 @@ ProcessingResult PreprocessorLexerInterface::processFile(const std::string& file
             // Configurar errorHandler no preprocessor
             preprocessor->setErrorHandler(errorHandler.get());
             
-            std::cout << "[DEBUG] Tentando processar arquivo com pré-processador: " << filename << std::endl;
             preprocessorSuccess = preprocessor->process(filename);
-            std::cout << "[DEBUG] Resultado do pré-processador: " << (preprocessorSuccess ? "SUCESSO" : "FALHA") << std::endl;
             if (preprocessorSuccess) {
                 lastResult.processedCode = preprocessor->getExpandedCode();
                 lastResult.includedFiles = preprocessor->getDependencies();
@@ -146,16 +144,12 @@ ProcessingResult PreprocessorLexerInterface::processFile(const std::string& file
                     const auto& errors = errorHandler->getErrors();
                     const auto& warnings = errorHandler->getWarnings();
                     
-                    std::cout << "[DEBUG] Coletando erros do errorHandler: " << errors.size() << " erros, " << warnings.size() << " avisos" << std::endl;
-                    
                     for (const auto& error : errors) {
                         lastResult.addError(error.message);
-                        std::cout << "[DEBUG] Erro adicionado: " << error.message << std::endl;
                     }
                     
                     for (const auto& warning : warnings) {
                         lastResult.addWarning(warning.message);
-                        std::cout << "[DEBUG] Aviso adicionado: " << warning.message << std::endl;
                     }
                 }
             }
@@ -180,8 +174,8 @@ ProcessingResult PreprocessorLexerInterface::processFile(const std::string& file
         // Coleta informações sobre macros
         collectMacroInformation();
         
-        // Coleta erros e avisos do errorHandler (apenas se o pré-processador teve sucesso)
-        if (preprocessorSuccess && errorHandler) {
+        // Coleta erros e avisos do errorHandler sempre (independente do sucesso)
+        if (errorHandler) {
             const auto& errors = errorHandler->getErrors();
             const auto& warnings = errorHandler->getWarnings();
             
@@ -202,8 +196,6 @@ ProcessingResult PreprocessorLexerInterface::processFile(const std::string& file
     
     // Define hasErrors baseado na presença de mensagens de erro
     lastResult.hasErrors = !lastResult.errorMessages.empty();
-    std::cout << "[DEBUG] hasErrors definido como: " << (lastResult.hasErrors ? "true" : "false") << std::endl;
-    std::cout << "[DEBUG] Número de erros: " << lastResult.errorMessages.size() << std::endl;
     
     return lastResult;
 }
@@ -239,7 +231,10 @@ ProcessingResult PreprocessorLexerInterface::processString(const std::string& co
         errorHandler->reportError(IntegratedErrorHandler::ErrorSource::PREPROCESSOR,
                                 e.what(), 0, 0);
     }
-    
+
+    // Define hasErrors baseado na presença de mensagens de erro
+    lastResult.hasErrors = !lastResult.errorMessages.empty();
+
     return lastResult;
 }
 
@@ -264,9 +259,7 @@ void PreprocessorLexerInterface::undefineMacro(const std::string& name) {
 
 void PreprocessorLexerInterface::addIncludePath(const std::string& path) {
     if (preprocessor) {
-        std::vector<std::string> current_paths = preprocessor->getDependencies();
-        current_paths.push_back(path);
-        preprocessor->setSearchPaths(current_paths);
+        preprocessor->addIncludePath(path);
     }
 }
 
@@ -362,14 +355,8 @@ void PreprocessorLexerInterface::collectMacroInformation() {
         size_t files_count = state_stats.files_processed;
         size_t macros_count = lastResult.definedMacros.size();
         
-        std::cout << "[DEBUG] Arquivos processados: " << files_count << std::endl;
-        std::cout << "[DEBUG] Macros definidas: " << macros_count << std::endl;
-        
-        std::cout << "[DEBUG] Macros coletadas: " << lastResult.definedMacros.size() << std::endl;
-        std::cout << "[DEBUG] Arquivos incluídos: " << lastResult.includedFiles.size() << std::endl;
-        
     } catch (const std::exception& e) {
-        std::cout << "[DEBUG] Erro ao coletar informações de macros: " << e.what() << std::endl;
+        // Error collecting macro information
     }
 }
 
