@@ -18,11 +18,11 @@ int main() {
     float area = PI * SQUARE(radius);
     
     printf("Soma: %d\n", sum);
-    printf("Diferença: %d\n", diff);
+    printf("Diferenca: %d\n", diff);
     printf("Produto: %d\n", product);
     printf("Quociente: %d\n", quotient);
     printf("Resto: %d\n", remainder);
-    printf("Área do círculo: %.2f\n", area);
+    printf("Area do circulo: %.2f\n", area);
     
     return 0;
 }

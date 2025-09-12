@@ -1,0 +1,16 @@
+# Loop while: while (i < 10) { i = i + 1; }
+1. WHILE                │ 'while' │ L1:C1 │ Palavras-chave
+2. LEFT_PAREN           │ '(' │ L1:C7 │ Delimitadores
+3. IDENTIFIER           │ 'i' │ L1:C8 │ Identificadores
+4. LESS_THAN            │ '<' │ L1:C10 │ Operadores
+5. INTEGER_LITERAL      │ '10' │ L1:C12 │ Literais
+6. RIGHT_PAREN          │ ')' │ L1:C14 │ Delimitadores
+7. LEFT_BRACE           │ '{' │ L1:C16 │ Delimitadores
+8. IDENTIFIER           │ 'i' │ L1:C18 │ Identificadores
+9. ASSIGN               │ '=' │ L1:C20 │ Operadores
+10. IDENTIFIER          │ 'i' │ L1:C22 │ Identificadores
+11. PLUS                │ '+' │ L1:C24 │ Operadores
+12. INTEGER_LITERAL     │ '1' │ L1:C26 │ Literais
+13. SEMICOLON           │ ';' │ L1:C27 │ Pontuação
+14. RIGHT_BRACE         │ '}' │ L1:C29 │ Delimitadores
+15. END_OF_FILE         │ '' │ L1:C30 │ Outros

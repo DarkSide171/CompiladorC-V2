@@ -1,0 +1,142 @@
+# Parser Error Messages
+# Format: ERROR_CODE: Message template with {placeholders}
+# Used by the parser for consistent error reporting
+
+# Syntax Errors (1000-1999)
+SYNTAX_ERROR_UNEXPECTED_TOKEN: Unexpected token '{token}' at line {line}, column {column}
+SYNTAX_ERROR_EXPECTED_TOKEN: Expected '{expected}' but found '{found}' at line {line}, column {column}
+SYNTAX_ERROR_MISSING_SEMICOLON: Missing semicolon after statement at line {line}, column {column}
+SYNTAX_ERROR_MISSING_BRACE: Missing '{brace_type}' brace at line {line}, column {column}
+SYNTAX_ERROR_UNMATCHED_BRACE: Unmatched '{brace_type}' brace at line {line}, column {column}
+SYNTAX_ERROR_MISSING_PARENTHESIS: Missing '{paren_type}' parenthesis at line {line}, column {column}
+SYNTAX_ERROR_UNMATCHED_PARENTHESIS: Unmatched '{paren_type}' parenthesis at line {line}, column {column}
+SYNTAX_ERROR_INVALID_EXPRESSION: Invalid expression at line {line}, column {column}
+SYNTAX_ERROR_INCOMPLETE_STATEMENT: Incomplete statement at line {line}, column {column}
+SYNTAX_ERROR_MALFORMED_DECLARATION: Malformed declaration at line {line}, column {column}
+
+# Declaration Errors (2000-2999)
+DECL_ERROR_INVALID_TYPE: Invalid type specifier '{type}' at line {line}, column {column}
+DECL_ERROR_MISSING_DECLARATOR: Missing declarator in declaration at line {line}, column {column}
+DECL_ERROR_INVALID_STORAGE_CLASS: Invalid storage class specifier '{storage_class}' at line {line}, column {column}
+DECL_ERROR_CONFLICTING_TYPES: Conflicting type specifiers at line {line}, column {column}
+DECL_ERROR_INVALID_FUNCTION_DEFINITION: Invalid function definition at line {line}, column {column}
+DECL_ERROR_MISSING_PARAMETER_NAME: Missing parameter name in function declaration at line {line}, column {column}
+DECL_ERROR_INVALID_ARRAY_SIZE: Invalid array size specification at line {line}, column {column}
+DECL_ERROR_VOID_VARIABLE: Cannot declare variable of type 'void' at line {line}, column {column}
+DECL_ERROR_INCOMPLETE_TYPE: Incomplete type in declaration at line {line}, column {column}
+DECL_ERROR_INVALID_INITIALIZER: Invalid initializer at line {line}, column {column}
+
+# Type Errors (3000-3999)
+TYPE_ERROR_INCOMPATIBLE_TYPES: Incompatible types: cannot convert '{from_type}' to '{to_type}' at line {line}, column {column}
+TYPE_ERROR_UNDEFINED_TYPE: Undefined type '{type}' at line {line}, column {column}
+TYPE_ERROR_REDEFINITION: Redefinition of type '{type}' at line {line}, column {column}
+TYPE_ERROR_INVALID_CAST: Invalid cast from '{from_type}' to '{to_type}' at line {line}, column {column}
+TYPE_ERROR_VOID_EXPRESSION: Expression of type 'void' used in invalid context at line {line}, column {column}
+TYPE_ERROR_ARRAY_OF_FUNCTIONS: Cannot declare array of functions at line {line}, column {column}
+TYPE_ERROR_FUNCTION_RETURNING_ARRAY: Function cannot return array type at line {line}, column {column}
+TYPE_ERROR_FUNCTION_RETURNING_FUNCTION: Function cannot return function type at line {line}, column {column}
+TYPE_ERROR_INVALID_POINTER_ARITHMETIC: Invalid pointer arithmetic at line {line}, column {column}
+TYPE_ERROR_DEREFERENCING_NON_POINTER: Cannot dereference non-pointer type '{type}' at line {line}, column {column}
+
+# Expression Errors (4000-4999)
+EXPR_ERROR_UNDEFINED_IDENTIFIER: Undefined identifier '{identifier}' at line {line}, column {column}
+EXPR_ERROR_INVALID_OPERATOR: Invalid operator '{operator}' for operand types at line {line}, column {column}
+EXPR_ERROR_DIVISION_BY_ZERO: Division by zero in constant expression at line {line}, column {column}
+EXPR_ERROR_INVALID_ASSIGNMENT: Invalid assignment target at line {line}, column {column}
+EXPR_ERROR_LVALUE_REQUIRED: Lvalue required as assignment target at line {line}, column {column}
+EXPR_ERROR_INVALID_FUNCTION_CALL: Invalid function call at line {line}, column {column}
+EXPR_ERROR_TOO_MANY_ARGUMENTS: Too many arguments in function call at line {line}, column {column}
+EXPR_ERROR_TOO_FEW_ARGUMENTS: Too few arguments in function call at line {line}, column {column}
+EXPR_ERROR_INVALID_ARRAY_SUBSCRIPT: Invalid array subscript at line {line}, column {column}
+EXPR_ERROR_INVALID_MEMBER_ACCESS: Invalid member access at line {line}, column {column}
+
+# Statement Errors (5000-5999)
+STMT_ERROR_INVALID_BREAK: 'break' statement not within loop or switch at line {line}, column {column}
+STMT_ERROR_INVALID_CONTINUE: 'continue' statement not within loop at line {line}, column {column}
+STMT_ERROR_INVALID_RETURN: Invalid return statement at line {line}, column {column}
+STMT_ERROR_MISSING_CASE_LABEL: Statement not preceded by case label in switch at line {line}, column {column}
+STMT_ERROR_DUPLICATE_CASE: Duplicate case value '{value}' at line {line}, column {column}
+STMT_ERROR_MULTIPLE_DEFAULT: Multiple 'default' labels in switch statement at line {line}, column {column}
+STMT_ERROR_INVALID_GOTO: Invalid goto statement at line {line}, column {column}
+STMT_ERROR_UNDEFINED_LABEL: Undefined label '{label}' at line {line}, column {column}
+STMT_ERROR_DUPLICATE_LABEL: Duplicate label '{label}' at line {line}, column {column}
+STMT_ERROR_UNREACHABLE_CODE: Unreachable code detected at line {line}, column {column}
+
+# Preprocessor Errors (6000-6999)
+PREPROC_ERROR_INVALID_DIRECTIVE: Invalid preprocessor directive at line {line}, column {column}
+PREPROC_ERROR_MISSING_HEADER: Cannot find header file '{filename}' at line {line}, column {column}
+PREPROC_ERROR_RECURSIVE_INCLUDE: Recursive include of file '{filename}' at line {line}, column {column}
+PREPROC_ERROR_MACRO_REDEFINITION: Redefinition of macro '{macro}' at line {line}, column {column}
+PREPROC_ERROR_UNDEFINED_MACRO: Undefined macro '{macro}' at line {line}, column {column}
+PREPROC_ERROR_INVALID_MACRO_ARGS: Invalid macro arguments at line {line}, column {column}
+PREPROC_ERROR_UNTERMINATED_CONDITIONAL: Unterminated conditional directive at line {line}, column {column}
+PREPROC_ERROR_UNEXPECTED_ENDIF: Unexpected '#endif' directive at line {line}, column {column}
+PREPROC_ERROR_UNEXPECTED_ELSE: Unexpected '#else' directive at line {line}, column {column}
+PREPROC_ERROR_INVALID_PRAGMA: Invalid pragma directive at line {line}, column {column}
+
+# C11/C17/C23 Specific Errors (7000-7999)
+C11_ERROR_INVALID_GENERIC: Invalid '_Generic' expression at line {line}, column {column}
+C11_ERROR_STATIC_ASSERT_FAILED: Static assertion failed: '{message}' at line {line}, column {column}
+C11_ERROR_INVALID_ALIGNAS: Invalid '_Alignas' specification at line {line}, column {column}
+C11_ERROR_INVALID_ATOMIC: Invalid '_Atomic' type qualifier at line {line}, column {column}
+C11_ERROR_THREAD_LOCAL_INVALID: '_Thread_local' can only be used with static or extern at line {line}, column {column}
+C23_ERROR_INVALID_TYPEOF: Invalid 'typeof' expression at line {line}, column {column}
+C23_ERROR_INVALID_BITINT: Invalid '_BitInt' specification at line {line}, column {column}
+C23_ERROR_INVALID_ATTRIBUTE: Invalid attribute specification at line {line}, column {column}
+C23_ERROR_ATTRIBUTE_SYNTAX: Malformed attribute syntax at line {line}, column {column}
+C23_ERROR_DECIMAL_FLOAT_UNSUPPORTED: Decimal floating-point types not supported at line {line}, column {column}
+
+# Recovery Suggestions (8000-8999)
+RECOVERY_SUGGESTION_MISSING_SEMICOLON: Did you forget a semicolon?
+RECOVERY_SUGGESTION_UNMATCHED_BRACE: Check for matching braces
+RECOVERY_SUGGESTION_TYPO: Did you mean '{suggestion}'?
+RECOVERY_SUGGESTION_INCLUDE_HEADER: Did you forget to include a header file?
+RECOVERY_SUGGESTION_DECLARE_VARIABLE: Variable '{variable}' may need to be declared
+RECOVERY_SUGGESTION_FUNCTION_PROTOTYPE: Function '{function}' may need a prototype
+RECOVERY_SUGGESTION_CAST_REQUIRED: Explicit cast may be required
+RECOVERY_SUGGESTION_CONST_QUALIFIER: Consider adding 'const' qualifier
+RECOVERY_SUGGESTION_PARENTHESES: Consider adding parentheses for clarity
+RECOVERY_SUGGESTION_INITIALIZATION: Variable may need initialization
+
+# Warning Messages (9000-9999)
+WARNING_UNUSED_VARIABLE: Unused variable '{variable}' at line {line}, column {column}
+WARNING_UNUSED_FUNCTION: Unused function '{function}' at line {line}, column {column}
+WARNING_IMPLICIT_DECLARATION: Implicit declaration of function '{function}' at line {line}, column {column}
+WARNING_IMPLICIT_CONVERSION: Implicit conversion from '{from_type}' to '{to_type}' at line {line}, column {column}
+WARNING_SIGNED_UNSIGNED_COMPARISON: Comparison between signed and unsigned values at line {line}, column {column}
+WARNING_POSSIBLE_LOSS_OF_DATA: Possible loss of data in conversion at line {line}, column {column}
+WARNING_UNREACHABLE_CODE: Unreachable code at line {line}, column {column}
+WARNING_MISSING_RETURN: Function may not return a value at line {line}, column {column}
+WARNING_DEPRECATED_FEATURE: Use of deprecated feature at line {line}, column {column}
+WARNING_NONSTANDARD_EXTENSION: Use of non-standard extension at line {line}, column {column}
+
+# Info Messages (10000-10999)
+INFO_PARSING_FILE: Parsing file '{filename}'
+INFO_PARSING_COMPLETE: Parsing completed successfully
+INFO_ERRORS_FOUND: Found {count} error(s)
+INFO_WARNINGS_FOUND: Found {count} warning(s)
+INFO_LINES_PARSED: Parsed {count} lines
+INFO_TOKENS_PROCESSED: Processed {count} tokens
+INFO_AST_NODES_CREATED: Created {count} AST nodes
+INFO_RECOVERY_ATTEMPTS: Made {count} error recovery attempts
+INFO_STANDARD_VERSION: Using C{standard} standard
+INFO_PARSING_TIME: Parsing completed in {time}ms
+
+# Generic Error Templates
+GENERIC_ERROR: Error at line {line}, column {column}: {message}
+GENERIC_WARNING: Warning at line {line}, column {column}: {message}
+GENERIC_INFO: Info: {message}
+GENERIC_FATAL: Fatal error: {message}
+GENERIC_INTERNAL: Internal parser error: {message}
+
+# Error Context Information
+CONTEXT_IN_FUNCTION: In function '{function}'
+CONTEXT_IN_STRUCT: In struct '{struct}'
+CONTEXT_IN_UNION: In union '{union}'
+CONTEXT_IN_ENUM: In enum '{enum}'
+CONTEXT_AT_TOP_LEVEL: At top level
+CONTEXT_IN_BLOCK: In block starting at line {line}
+CONTEXT_IN_EXPRESSION: In expression
+CONTEXT_IN_DECLARATION: In declaration
+CONTEXT_IN_STATEMENT: In statement
+CONTEXT_IN_INITIALIZER: In initializer

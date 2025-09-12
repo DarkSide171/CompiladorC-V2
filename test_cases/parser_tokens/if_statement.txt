@@ -1,0 +1,20 @@
+# Estrutura condicional: if (x > 0) { return 1; } else { return -1; }
+1. IF                   │ 'if' │ L1:C1 │ Palavras-chave
+2. LEFT_PAREN           │ '(' │ L1:C4 │ Delimitadores
+3. IDENTIFIER           │ 'x' │ L1:C5 │ Identificadores
+4. GREATER_THAN         │ '>' │ L1:C7 │ Operadores
+5. INTEGER_LITERAL      │ '0' │ L1:C9 │ Literais
+6. RIGHT_PAREN          │ ')' │ L1:C10 │ Delimitadores
+7. LEFT_BRACE           │ '{' │ L1:C12 │ Delimitadores
+8. RETURN               │ 'return' │ L1:C14 │ Palavras-chave
+9. INTEGER_LITERAL      │ '1' │ L1:C21 │ Literais
+10. SEMICOLON           │ ';' │ L1:C22 │ Pontuação
+11. RIGHT_BRACE         │ '}' │ L1:C24 │ Delimitadores
+12. ELSE                │ 'else' │ L1:C26 │ Palavras-chave
+13. LEFT_BRACE          │ '{' │ L1:C31 │ Delimitadores
+14. RETURN              │ 'return' │ L1:C33 │ Palavras-chave
+15. MINUS               │ '-' │ L1:C40 │ Operadores
+16. INTEGER_LITERAL     │ '1' │ L1:C41 │ Literais
+17. SEMICOLON           │ ';' │ L1:C42 │ Pontuação
+18. RIGHT_BRACE         │ '}' │ L1:C44 │ Delimitadores
+19. END_OF_FILE         │ '' │ L1:C45 │ Outros

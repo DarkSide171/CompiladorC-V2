@@ -1,0 +1,13 @@
+# Expressão aritmética: int result = (a + b) * c;
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'result' │ L1:C5 │ Identificadores
+3. ASSIGN               │ '=' │ L1:C12 │ Operadores
+4. LEFT_PAREN           │ '(' │ L1:C14 │ Delimitadores
+5. IDENTIFIER           │ 'a' │ L1:C15 │ Identificadores
+6. PLUS                 │ '+' │ L1:C17 │ Operadores
+7. IDENTIFIER           │ 'b' │ L1:C19 │ Identificadores
+8. RIGHT_PAREN          │ ')' │ L1:C20 │ Delimitadores
+9. MULTIPLY             │ '*' │ L1:C22 │ Operadores
+10. IDENTIFIER          │ 'c' │ L1:C24 │ Identificadores
+11. SEMICOLON           │ ';' │ L1:C25 │ Pontuação
+12. END_OF_FILE         │ '' │ L1:C26 │ Outros

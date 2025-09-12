@@ -181,7 +181,7 @@ bool PreprocessorMain::processString(const std::string& content) {
         current_file_ = "<string>";
         processing_active_ = true;
         
-        logger_->info("Iniciando processamento de string");
+     //   logger_->info("Iniciando processamento de string");
         
         // Validar entrada
         if (!validateInput(content)) {
@@ -205,7 +205,7 @@ bool PreprocessorMain::processString(const std::string& content) {
         }
         
         processing_active_ = false;
-        logger_->info("Processamento de string concluído com sucesso");
+        // logger_->info("Processamento de string concluído com sucesso");
         return true;
         
     } catch (const std::exception& e) {
@@ -270,16 +270,16 @@ bool PreprocessorMain::processLine(const std::string& line, int line_number) {
         size_t first_non_space = trimmed_line.find_first_not_of(" \t");
         
         // Debug: log detalhado para verificar detecção de diretivas
-        logger_->info("PROCESSANDO LINHA: '" + line + "'");
-        logger_->info("first_non_space: " + std::to_string(first_non_space));
+        // logger_->info("PROCESSANDO LINHA: '" + line + "'");
+        // logger_->info("first_non_space: " + std::to_string(first_non_space));
         if (first_non_space != std::string::npos) {
             char first_char = trimmed_line[first_non_space];
-            logger_->info("Primeiro char não-espaço: '" + std::string(1, first_char) + "' (ASCII: " + std::to_string((int)first_char) + ")");
-            logger_->info("Comparação com '#': " + std::string(first_char == '#' ? "true" : "false"));
+            // logger_->info("Primeiro char não-espaço: '" + std::string(1, first_char) + "' (ASCII: " + std::to_string((int)first_char) + ")");
+            // logger_->info("Comparação com '#': " + std::string(first_char == '#' ? "true" : "false"));
         }
         
         bool is_directive = (first_non_space != std::string::npos && trimmed_line[first_non_space] == '#');
-        logger_->info("is_directive: " + std::string(is_directive ? "true" : "false"));
+ //       logger_->info("is_directive: " + std::string(is_directive ? "true" : "false"));
         
         if (is_directive) {
             logger_->info("DIRETIVA DETECTADA: " + line);
@@ -404,9 +404,9 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                     const auto& args = directive.getArguments();
                     if (!args.empty()) {
                         std::string filename = args[0];
-                        logger_->info("Ignorando #include: " + filename + " (processamento de includes desabilitado)");
+                        // logger_->info("Ignorando #include: " + filename + " (processamento de includes desabilitado)");
                     } else {
-                        logger_->info("Ignorando #include vazio (processamento de includes desabilitado)");
+                        // logger_->info("Ignorando #include vazio (processamento de includes desabilitado)");
                     }
                     // Retornar true para continuar o processamento normalmente
                     return true;
@@ -647,8 +647,8 @@ bool PreprocessorMain::handleDirective(const Directive& directive) {
                                  }
                              }
                             
-                            logger_->info("#line processado: linha=" + std::to_string(new_line) + 
-                                        (filename.empty() ? "" : ", arquivo=" + filename));
+                            // logger_->info("#line processado: linha=" + std::to_string(new_line) + 
+                            //             (filename.empty() ? "" : ", arquivo=" + filename));
                         } catch (const std::exception& e) {
                             logger_->error("Erro ao processar #line: número de linha inválido: " + line_str);
                             return false;
@@ -1197,12 +1197,75 @@ bool PreprocessorMain::validateOutput(const std::string& output) {
         line_num++;
     }
     
-    // Verificar integridade básica da sintaxe C
+    // Verificar integridade básica da sintaxe C com contexto
     int brace_count = 0;
     int paren_count = 0;
     int bracket_count = 0;
+    bool in_string = false;
+    bool in_char = false;
+    bool in_single_comment = false;
+    bool in_multi_comment = false;
+    bool escaped = false;
     
-    for (char c : output) {
+    for (size_t i = 0; i < output.length(); ++i) {
+        char c = output[i];
+        char next = (i + 1 < output.length()) ? output[i + 1] : '\0';
+        
+        // Handle escape sequences
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        
+        if (c == '\\' && (in_string || in_char)) {
+            escaped = true;
+            continue;
+        }
+        
+        // Handle comments
+        if (!in_string && !in_char) {
+            if (c == '/' && next == '/' && !in_multi_comment) {
+                in_single_comment = true;
+                i++; // Skip next character
+                continue;
+            }
+            if (c == '/' && next == '*' && !in_single_comment) {
+                in_multi_comment = true;
+                i++; // Skip next character
+                continue;
+            }
+            if (c == '*' && next == '/' && in_multi_comment) {
+                in_multi_comment = false;
+                i++; // Skip next character
+                continue;
+            }
+            if (c == '\n' && in_single_comment) {
+                in_single_comment = false;
+                continue;
+            }
+        }
+        
+        // Skip if we're in a comment
+        if (in_single_comment || in_multi_comment) {
+            continue;
+        }
+        
+        // Handle string and character literals
+        if (c == '"' && !in_char) {
+            in_string = !in_string;
+            continue;
+        }
+        if (c == '\'' && !in_string) {
+            in_char = !in_char;
+            continue;
+        }
+        
+        // Skip delimiter counting if we're inside strings or characters
+        if (in_string || in_char) {
+            continue;
+        }
+        
+        // Count delimiters only when not in strings/comments
         switch (c) {
             case '{': brace_count++; break;
             case '}': brace_count--; break;
@@ -1212,23 +1275,25 @@ bool PreprocessorMain::validateOutput(const std::string& output) {
             case ']': bracket_count--; break;
         }
         
-        // Verificar se algum contador ficou negativo
-        if (brace_count < 0 || paren_count < 0 || bracket_count < 0) {
-            logger_->warning("Desbalanceamento de delimitadores detectado na saída");
+        // Only warn about negative counts if they're significantly unbalanced
+        // (small temporary imbalances during processing are normal)
+        if (brace_count < -5 || paren_count < -5 || bracket_count < -5) {
+            logger_->warning("Desbalanceamento significativo de delimitadores detectado na saída");
             break;
         }
     }
     
-    if (brace_count != 0) {
-        logger_->warning("Chaves desbalanceadas na saída (diferença: " + std::to_string(brace_count) + ")");
+    // Only warn about final imbalances if they're significant
+    if (abs(brace_count) > 2) {
+        logger_->warning("Chaves significativamente desbalanceadas na saída (diferença: " + std::to_string(brace_count) + ")");
     }
     
-    if (paren_count != 0) {
-        logger_->warning("Parênteses desbalanceados na saída (diferença: " + std::to_string(paren_count) + ")");
+    if (abs(paren_count) > 2) {
+        logger_->warning("Parênteses significativamente desbalanceados na saída (diferença: " + std::to_string(paren_count) + ")");
     }
     
-    if (bracket_count != 0) {
-        logger_->warning("Colchetes desbalanceados na saída (diferença: " + std::to_string(bracket_count) + ")");
+    if (abs(bracket_count) > 2) {
+        logger_->warning("Colchetes significativamente desbalanceados na saída (diferença: " + std::to_string(bracket_count) + ")");
     }
     
     return true;

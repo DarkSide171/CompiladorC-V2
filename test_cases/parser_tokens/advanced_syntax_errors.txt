@@ -1,0 +1,64 @@
+# Arquivo de teste avançado para detecção de erros de sintaxe no parser
+# Casos de teste mais complexos para validar o sistema de detecção de erros
+
+# Teste 1: Estrutura if incompleta (sem condição)
+1. IF                   │ 'if' │ L1:C1 │ Palavras-chave
+2. LEFT_PAREN           │ '(' │ L1:C4 │ Delimitadores
+# Condição ausente - deve causar erro
+3. RIGHT_PAREN          │ ')' │ L1:C5 │ Delimitadores
+4. LEFT_BRACE           │ '{' │ L1:C7 │ Delimitadores
+5. RIGHT_BRACE          │ '}' │ L1:C8 │ Delimitadores
+
+# Teste 2: Loop for malformado (sem inicialização)
+6. FOR                  │ 'for' │ L3:C1 │ Palavras-chave
+7. LEFT_PAREN           │ '(' │ L3:C5 │ Delimitadores
+# Inicialização ausente - deve causar erro
+8. SEMICOLON            │ ';' │ L3:C6 │ Pontuação
+9. IDENTIFIER           │ 'i' │ L3:C8 │ Identificadores
+10. LESS                │ '<' │ L3:C10 │ Operadores
+11. INTEGER_LITERAL     │ '10' │ L3:C12 │ Literais
+12. SEMICOLON           │ ';' │ L3:C14 │ Pontuação
+13. IDENTIFIER          │ 'i' │ L3:C16 │ Identificadores
+14. INCREMENT           │ '++' │ L3:C17 │ Operadores
+15. RIGHT_PAREN         │ ')' │ L3:C19 │ Delimitadores
+16. LEFT_BRACE          │ '{' │ L3:C21 │ Delimitadores
+17. RIGHT_BRACE         │ '}' │ L3:C22 │ Delimitadores
+
+# Teste 3: Declaração de array sem tamanho e sem inicialização
+18. INT                 │ 'int' │ L5:C1 │ Palavras-chave
+19. IDENTIFIER          │ 'arr' │ L5:C5 │ Identificadores
+20. LEFT_BRACKET        │ '[' │ L5:C8 │ Delimitadores
+# Tamanho do array ausente - deve causar erro
+21. RIGHT_BRACKET       │ ']' │ L5:C9 │ Delimitadores
+22. SEMICOLON           │ ';' │ L5:C10 │ Pontuação
+
+# Teste 4: Função sem tipo de retorno
+23. IDENTIFIER          │ 'func' │ L7:C1 │ Identificadores
+24. LEFT_PAREN          │ '(' │ L7:C5 │ Delimitadores
+25. RIGHT_PAREN         │ ')' │ L7:C6 │ Delimitadores
+26. LEFT_BRACE          │ '{' │ L7:C8 │ Delimitadores
+27. RIGHT_BRACE         │ '}' │ L7:C9 │ Delimitadores
+
+# Teste 5: Expressão com operadores consecutivos
+28. INT                 │ 'int' │ L9:C1 │ Palavras-chave
+29. IDENTIFIER          │ 'x' │ L9:C5 │ Identificadores
+30. ASSIGN              │ '=' │ L9:C7 │ Operadores
+31. INTEGER_LITERAL     │ '5' │ L9:C9 │ Literais
+32. PLUS                │ '+' │ L9:C11 │ Operadores
+33. MULTIPLY            │ '*' │ L9:C13 │ Operadores
+# Operando ausente entre operadores - deve causar erro
+34. INTEGER_LITERAL     │ '3' │ L9:C15 │ Literais
+35. SEMICOLON           │ ';' │ L9:C16 │ Pontuação
+
+# Teste 6: Switch sem expressão
+36. SWITCH              │ 'switch' │ L11:C1 │ Palavras-chave
+37. LEFT_PAREN          │ '(' │ L11:C8 │ Delimitadores
+# Expressão do switch ausente - deve causar erro
+38. RIGHT_PAREN         │ ')' │ L11:C9 │ Delimitadores
+39. LEFT_BRACE          │ '{' │ L11:C11 │ Delimitadores
+40. CASE                │ 'case' │ L12:C5 │ Palavras-chave
+41. INTEGER_LITERAL     │ '1' │ L12:C10 │ Literais
+42. COLON               │ ':' │ L12:C11 │ Pontuação
+43. BREAK               │ 'break' │ L12:C13 │ Palavras-chave
+44. SEMICOLON           │ ';' │ L12:C18 │ Pontuação
+45. RIGHT_BRACE         │ '}' │ L13:C1 │ Delimitadores

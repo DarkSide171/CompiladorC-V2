@@ -1,0 +1,47 @@
+# Teste abrangente de detecção de erros do parser
+# Demonstra diferentes categorias de erros sintáticos
+
+# Categoria 1: Erros de expressão aritmética
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'main' │ L1:C5 │ Identificadores
+3. LEFT_PAREN           │ '(' │ L1:C9 │ Delimitadores
+4. RIGHT_PAREN          │ ')' │ L1:C10 │ Delimitadores
+5. LEFT_BRACE           │ '{' │ L1:C12 │ Delimitadores
+
+# Erro: Operador sem operando direito
+6. INT                  │ 'int' │ L2:C5 │ Palavras-chave
+7. IDENTIFIER           │ 'a' │ L2:C9 │ Identificadores
+8. ASSIGN               │ '=' │ L2:C11 │ Operadores
+9. INTEGER_LITERAL      │ '10' │ L2:C13 │ Literais
+10. MULTIPLY            │ '*' │ L2:C16 │ Operadores
+11. SEMICOLON           │ ';' │ L2:C18 │ Pontuação
+
+# Categoria 2: Erros de estruturas de controle
+# Erro: Condição incompleta no if
+12. IF                  │ 'if' │ L4:C5 │ Palavras-chave
+13. LEFT_PAREN          │ '(' │ L4:C8 │ Delimitadores
+14. IDENTIFIER          │ 'a' │ L4:C9 │ Identificadores
+15. EQUAL               │ '==' │ L4:C11 │ Operadores
+16. RIGHT_PAREN         │ ')' │ L4:C14 │ Delimitadores
+17. LEFT_BRACE          │ '{' │ L4:C16 │ Delimitadores
+18. RIGHT_BRACE         │ '}' │ L4:C17 │ Delimitadores
+
+# Categoria 3: Erros de chamada de função
+# Erro: Argumento ausente após vírgula
+19. IDENTIFIER          │ 'func' │ L6:C5 │ Identificadores
+20. LEFT_PAREN          │ '(' │ L6:C9 │ Delimitadores
+21. INTEGER_LITERAL     │ '1' │ L6:C10 │ Literais
+22. COMMA               │ ',' │ L6:C11 │ Pontuação
+23. COMMA               │ ',' │ L6:C13 │ Pontuação
+24. INTEGER_LITERAL     │ '3' │ L6:C15 │ Literais
+25. RIGHT_PAREN         │ ')' │ L6:C16 │ Delimitadores
+26. SEMICOLON           │ ';' │ L6:C17 │ Pontuação
+
+# Categoria 4: Erros de declaração
+# Erro: Tipo ausente na declaração
+27. IDENTIFIER          │ 'x' │ L8:C5 │ Identificadores
+28. ASSIGN              │ '=' │ L8:C7 │ Operadores
+29. INTEGER_LITERAL     │ '5' │ L8:C9 │ Literais
+30. SEMICOLON           │ ';' │ L8:C10 │ Pontuação
+
+31. RIGHT_BRACE         │ '}' │ L10:C1 │ Delimitadores

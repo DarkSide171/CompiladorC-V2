@@ -6,6 +6,9 @@
 #include "lexer/include/token.hpp"
 #include "lexer_preprocessor_bridge.hpp"
 #include "preprocessor/include/preprocessor.hpp"
+#include "parser/include/parser.hpp"
+#include "parser/include/token_stream.hpp"
+#include "parser/include/ast_printer.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -19,6 +22,7 @@
 #include <algorithm>
 
 using namespace Lexer;
+using namespace Parser;
 
 // Enumeração para tipos de saída
 enum class OutputFormat {
@@ -26,6 +30,13 @@ enum class OutputFormat {
     SUMMARY,    // Saída resumida apenas com estatísticas
     JSON,       // Saída em formato JSON
     SEQUENTIAL  // Saída sequencial sem agrupamento por categoria
+};
+
+// Estrutura para controlar análise sintática
+struct ParsingOptions {
+    bool enableParsing = true;
+    bool showAST = true;
+    bool showParseErrors = true;
 };
 
 // Estrutura para filtros de tokens
@@ -524,6 +535,146 @@ void printTokensSequential(const std::vector<Token>& tokens, const std::string& 
     }
 }
 
+// Implementação concreta do TokenStream para integração
+class BufferedTokenStream : public TokenStream {
+private:
+    std::vector<Lexer::Token> tokens;
+    size_t currentPosition;
+    
+public:
+    explicit BufferedTokenStream(const std::vector<Lexer::Token>& tokenList)
+        : tokens(tokenList), currentPosition(0) {
+        if (tokens.empty()) {
+            Lexer::Position pos{1, 1, 0};
+            tokens.emplace_back(Lexer::TokenType::END_OF_FILE, "", pos);
+        }
+    }
+    
+    const Token& current() const override {
+        if (currentPosition >= tokens.size()) {
+            return tokens.back(); // Return EOF token
+        }
+        return tokens[currentPosition];
+    }
+    
+    const Token& peek(size_t offset = 1) const override {
+        size_t peekPos = currentPosition + offset;
+        if (peekPos >= tokens.size()) {
+            return tokens.back(); // Return EOF token
+        }
+        return tokens[peekPos];
+    }
+    
+    bool advance() override {
+        if (currentPosition < tokens.size() - 1) {
+            currentPosition++;
+            return true;
+        }
+        return false;
+    }
+    
+    bool isAtEnd() const override {
+        return currentPosition >= tokens.size() - 1 || 
+               tokens[currentPosition].getType() == Lexer::TokenType::END_OF_FILE;
+    }
+    
+    size_t getPosition() const override {
+        return currentPosition;
+    }
+    
+    void setPosition(size_t position) override {
+        currentPosition = std::min(position, tokens.size() - 1);
+    }
+    
+    size_t size() const override {
+        return tokens.size();
+    }
+    
+    const Token& previous(size_t offset = 1) const override {
+        if (currentPosition < offset) {
+            return tokens[0];
+        }
+        return tokens[currentPosition - offset];
+    }
+    
+    std::vector<Token> getRange(size_t start, size_t end) const override {
+        start = std::min(start, tokens.size());
+        end = std::min(end, tokens.size());
+        if (start >= end) return {};
+        return std::vector<Token>(tokens.begin() + start, tokens.begin() + end);
+    }
+};
+
+// Função para processar tokens com o parser
+bool processTokensWithParser(const std::vector<Token>& tokens, const std::string& filename, const ParsingOptions& parseOptions) {
+    if (!parseOptions.enableParsing) {
+        return false; // Não há erros se parsing não está habilitado
+    }
+    
+    std::cout << Colors::BOLD << Colors::MAGENTA << "\n╔══════════════════════════════════════════════════════════════╗" << Colors::RESET << std::endl;
+    std::cout << Colors::BOLD << Colors::MAGENTA << "║" << Colors::RESET << " ANÁLISE SINTÁTICA: " << Colors::YELLOW << filename << Colors::RESET;
+    std::cout << std::string(std::max(0, 32 - (int)filename.length()), ' ') << Colors::BOLD << Colors::MAGENTA << "║" << Colors::RESET << std::endl;
+    std::cout << Colors::BOLD << Colors::MAGENTA << "╚══════════════════════════════════════════════════════════════╝" << Colors::RESET << std::endl;
+    
+    try {
+        // Criar configuração do parser
+        ParserConfig config;
+        config.setCStandard(CStandard::C89);
+        
+        // Criar o analisador sintático
+        SyntacticAnalyzer parser(config);
+        std::cout << "[DEBUG] main: Parser criado" << std::endl;
+        
+        // Criar stream de tokens usando os tokens do lexer diretamente
+        auto tokenStream = std::make_unique<BufferedTokenStream>(tokens);
+        std::cout << "[DEBUG] main: TokenStream criado" << std::endl;
+        
+        // Executar análise sintática
+        std::cout << "[DEBUG] main: Chamando parseTokens com " << tokens.size() << " tokens" << std::endl;
+        auto parseResult = parser.parseTokens(std::move(tokenStream));
+        std::cout << "[DEBUG] main: parseTokens retornou" << std::endl;
+        
+        bool hasParseErrors = false;
+        
+        // Verificar se há erros no parser, mesmo se o resultado principal foi sucesso
+        if (parser.hasErrors()) {
+            hasParseErrors = true;
+            if (parseOptions.showParseErrors) {
+                std::cout << Colors::RED << "❌ Erros de análise sintática encontrados:" << Colors::RESET << std::endl;
+                const auto& errors = parser.getErrors();
+                for (const auto& error : errors) {
+                    std::cout << "  " << Colors::RED << "Erro: " << error->getMessage() << Colors::RESET << std::endl;
+                }
+            }
+        }
+        
+        if (!parseResult.isSuccess()) {
+            hasParseErrors = true;
+            if (parseOptions.showParseErrors) {
+                std::cout << Colors::RED << "❌ Erro principal de análise sintática:" << Colors::RESET << std::endl;
+                const auto& error = parseResult.getError();
+                if (error) {
+                    std::cout << "  " << Colors::RED << "Erro: " << error->getMessage() << Colors::RESET << std::endl;
+                }
+            }
+        } else if (!hasParseErrors) {
+            std::cout << Colors::GREEN << "✅ Análise sintática concluída com sucesso!" << Colors::RESET << std::endl;
+        }
+        
+        if (parseOptions.showAST && parseResult.getValue()) {
+            std::cout << Colors::CYAN << "\n🌳 Árvore Sintática Abstrata (AST):" << Colors::RESET << std::endl;
+            std::string astOutput = ASTPrinter::print(*parseResult.getValue());
+            std::cout << astOutput << std::endl;
+        }
+        
+        return hasParseErrors;
+        
+    } catch (const std::exception& e) {
+        std::cout << Colors::RED << "❌ Erro durante análise sintática: " << e.what() << Colors::RESET << std::endl;
+        return true;
+    }
+}
+
 void printTokensVerbose(const std::vector<Token>& tokens, const std::string& filename, bool hasErrors, const TokenFilter& filter = TokenFilter{}) {
     // Organizar tokens por categoria
     std::map<std::string, std::vector<Token>> tokensByCategory;
@@ -589,8 +740,8 @@ void printTokensVerbose(const std::vector<Token>& tokens, const std::string& fil
 }
 
 // Função para processar um arquivo .c
-bool processFile(const std::string& filename, OutputFormat format = OutputFormat::VERBOSE, const TokenFilter& filter = TokenFilter{}) {
-    std::cout << "[DEBUG] processFile chamada para: " << filename << std::endl;
+bool processFile(const std::string& filename, OutputFormat format = OutputFormat::VERBOSE, const TokenFilter& filter = TokenFilter{}, const ParsingOptions& parseOptions = {}) {
+    // std::cout << "[DEBUG] processFile chamada para: " << filename << std::endl;
     std::cout << Colors::BOLD << Colors::CYAN << "\n╔══════════════════════════════════════════════════════════════╗" << Colors::RESET << std::endl;
     std::cout << Colors::BOLD << Colors::CYAN << "║" << Colors::RESET << " Processando: " << Colors::YELLOW << filename << Colors::RESET;
     std::cout << std::string(std::max(0, 40 - (int)filename.length()), ' ') << Colors::BOLD << Colors::CYAN << "║" << Colors::RESET << std::endl;
@@ -613,6 +764,9 @@ bool processFile(const std::string& filename, OutputFormat format = OutputFormat
             std::cerr << Colors::RED << "❌ Erro na inicialização do pipeline" << Colors::RESET << std::endl;
             return true;
         }
+        
+        // Configurar nível de log do preprocessor para reduzir verbosidade
+        // Nota: Esta configuração será implementada no bridge
         
         // Processar o arquivo através do pipeline
         bool processingSuccess = bridge.processFile(filename);
@@ -710,6 +864,13 @@ bool processFile(const std::string& filename, OutputFormat format = OutputFormat
                 break;
         }
         
+        // Análise sintática (se habilitada)
+        if (parseOptions.enableParsing) {
+            std::cout << "\n" << Colors::CYAN << "🔍 Iniciando análise sintática..." << Colors::RESET << std::endl;
+            bool parseErrors = processTokensWithParser(allTokens, filename, parseOptions);
+            hasErrors = hasErrors || parseErrors;
+        }
+
         return hasErrors;
         
     } catch (const std::exception& e) {
@@ -761,6 +922,13 @@ void printUsage(const char* programName) {
     std::cout << "  --filter-punctuation   Mostrar apenas pontuação" << std::endl;
     std::cout << "  --filter-preprocessor  Mostrar apenas diretivas de preprocessador" << std::endl;
     
+    std::cout << Colors::YELLOW << "\n🔍 OPÇÕES DE ANÁLISE SINTÁTICA:" << Colors::RESET << std::endl;
+    std::cout << "  --show-ast             Mostrar árvore sintática abstrata (AST) (habilitado por padrão)" << std::endl;
+    std::cout << "  --no-parse-errors      Ocultar erros de análise sintática" << std::endl;
+    
+    std::cout << Colors::YELLOW << "\n📁 OPÇÕES DE SAÍDA:" << Colors::RESET << std::endl;
+    std::cout << "  -f, --file <arquivo>       Redirecionar toda a saída para o arquivo especificado" << std::endl;
+    
     std::cout << Colors::YELLOW << "\n❓ AJUDA:" << Colors::RESET << std::endl;
     std::cout << "  -h, --help      Mostra esta ajuda" << std::endl;
     
@@ -773,12 +941,18 @@ void printUsage(const char* programName) {
     std::cout << "    " << Colors::GRAY << programName << " --filter-keywords programa.c" << Colors::RESET << std::endl;
     std::cout << "  " << Colors::WHITE << "• JSON com filtro:" << Colors::RESET << std::endl;
     std::cout << "    " << Colors::GRAY << programName << " --json --filter-operators diretorio/" << Colors::RESET << std::endl;
+    std::cout << "  " << Colors::WHITE << "• Análise completa com AST (padrão):" << Colors::RESET << std::endl;
+    std::cout << "    " << Colors::GRAY << programName << " programa.c" << Colors::RESET << std::endl;
+    std::cout << "  " << Colors::WHITE << "• Salvar saída em arquivo:" << Colors::RESET << std::endl;
+    std::cout << "    " << Colors::GRAY << programName << " --file resultado.txt programa.c" << Colors::RESET << std::endl;
 }
 
 int main(int argc, char* argv[]) {
     OutputFormat format = OutputFormat::SEQUENTIAL;
     TokenFilter filter;
+    ParsingOptions parseOptions;
     std::string inputPath;
+    std::string outputFile;
     bool hasFilterOptions = false;
     
     // Processar argumentos da linha de comando
@@ -860,6 +1034,18 @@ int main(int argc, char* argv[]) {
                 hasFilterOptions = true;
             }
             filter.showPreprocessor = true;
+        } else if (arg == "--show-ast") {
+            parseOptions.enableParsing = true;
+            parseOptions.showAST = true;
+        } else if (arg == "--no-parse-errors") {
+            parseOptions.showParseErrors = false;
+    } else if (arg == "-f" || arg == "--file") {
+            if (i + 1 >= argc) {
+                std::cout << Colors::RED << "❌ Erro: Opção --file requer um nome de arquivo!" << Colors::RESET << std::endl;
+                printUsage(argv[0]);
+                return 1;
+            }
+            outputFile = argv[++i];
         } else if (arg[0] != '-') {
             // É o caminho do arquivo/diretório
             if (inputPath.empty()) {
@@ -883,6 +1069,33 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
+    // Configurar redirecionamento de saída se especificado
+    std::ofstream outputFileStream;
+    std::streambuf* originalCoutBuffer = nullptr;
+    bool outputToFile = !outputFile.empty();
+    
+    if (outputToFile) {
+        outputFileStream.open(outputFile);
+        if (!outputFileStream.is_open()) {
+            std::cout << "❌ Erro: Não foi possível criar o arquivo de saída: " << outputFile << std::endl;
+            return 1;
+        }
+        originalCoutBuffer = std::cout.rdbuf();
+        std::cout.rdbuf(outputFileStream.rdbuf());
+        
+        // Desabilitar cores redefinindo as constantes temporariamente
+        const_cast<std::string&>(Colors::RESET) = "";
+        const_cast<std::string&>(Colors::BOLD) = "";
+        const_cast<std::string&>(Colors::RED) = "";
+        const_cast<std::string&>(Colors::GREEN) = "";
+        const_cast<std::string&>(Colors::YELLOW) = "";
+        const_cast<std::string&>(Colors::BLUE) = "";
+        const_cast<std::string&>(Colors::MAGENTA) = "";
+        const_cast<std::string&>(Colors::CYAN) = "";
+        const_cast<std::string&>(Colors::WHITE) = "";
+        const_cast<std::string&>(Colors::GRAY) = "";
+    }
+    
     // Mostrar cabeçalho apenas para formato verbose
     if (format == OutputFormat::VERBOSE) {
         printHeader();
@@ -893,7 +1106,7 @@ int main(int argc, char* argv[]) {
     try {
         if (isRegularFile(inputPath)) {
             if (isCFile(inputPath)) {
-                hasErrors = processFile(inputPath, format, filter);
+                hasErrors = processFile(inputPath, format, filter, parseOptions);
             } else {
                 std::cout << Colors::RED << "❌ Erro: O arquivo deve ter extensão .c" << Colors::RESET << std::endl;
                 return 1;
@@ -925,7 +1138,7 @@ int main(int argc, char* argv[]) {
                 if (format == OutputFormat::JSON && i > 0) {
                     std::cout << ",\n";
                 }
-                if (processFile(cFiles[i], format, filter)) {
+                if (processFile(cFiles[i], format, filter, parseOptions)) {
                     hasErrors = true;
                 }
             }
@@ -950,6 +1163,12 @@ int main(int argc, char* argv[]) {
             std::cout << Colors::BOLD << Colors::GREEN << "\n🎉 PROCESSAMENTO FINALIZADO COM SUCESSO!" << Colors::RESET << std::endl;
         }
         std::cout << Colors::GRAY << "Obrigado por usar o Analisador Léxico C!" << Colors::RESET << std::endl;
+    }
+    
+    // Restaurar saída original se foi redirecionada
+    if (originalCoutBuffer != nullptr) {
+        std::cout.rdbuf(originalCoutBuffer);
+        outputFileStream.close();
     }
     
     return hasErrors ? 1 : 0;

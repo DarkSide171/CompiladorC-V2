@@ -1,0 +1,11 @@
+# Teste expressão: int result = a + b * 2;
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'result' │ L1:C5 │ Identificadores
+3. ASSIGN               │ '=' │ L1:C12 │ Operadores
+4. IDENTIFIER           │ 'a' │ L1:C14 │ Identificadores
+5. PLUS                 │ '+' │ L1:C16 │ Operadores
+6. IDENTIFIER           │ 'b' │ L1:C18 │ Identificadores
+7. MULTIPLY             │ '*' │ L1:C20 │ Operadores
+8. INTEGER_LITERAL      │ '2' │ L1:C22 │ Literais
+9. SEMICOLON            │ ';' │ L1:C23 │ Delimitadores
+10. END_OF_FILE         │ '' │ L1:C24 │ Fim de arquivo

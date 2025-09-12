@@ -89,7 +89,7 @@ private:
     
 public:
     // Construtores e destrutor
-    explicit PreprocessorLogger(LogLevel level = LogLevel::INFO);
+    explicit PreprocessorLogger(LogLevel level = LogLevel::WARNING);
     ~PreprocessorLogger();
     
     // Configuração básica

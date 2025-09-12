@@ -3,6 +3,6 @@
 
 int main() {
     // String não fechada
-    printf("Hello World without closing quote);
+    printf("Hello World without closing quot);
     return 0;
 }

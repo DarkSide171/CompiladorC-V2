@@ -1,0 +1,7 @@
+# Declaração de variável: int x = 42;
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'x' │ L1:C5 │ Identificadores
+3. ASSIGN               │ '=' │ L1:C7 │ Operadores
+4. INTEGER_LITERAL      │ '42' │ L1:C9 │ Literais
+5. SEMICOLON            │ ';' │ L1:C11 │ Pontuação
+6. END_OF_FILE          │ '' │ L1:C12 │ Outros

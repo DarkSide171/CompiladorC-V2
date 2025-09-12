@@ -39,9 +39,9 @@ int processData(const char *input, Node **output, size_t count) {
     
     // Operadores lógicos e relacionais
     if (result > 0 && result < 100) {
-        DEBUG_PRINT("Result is valid: %d", result);
+ //       DEBUG_PRINT("Result is valid: %d", result);
     } else if (result <= 0 || result >= 100) {
-        DEBUG_PRINT("Result out of range: %d", result);
+   //     DEBUG_PRINT("Result out of range: %d", result);
     }
     
     // Operadores bit a bit
@@ -78,7 +78,7 @@ int main(void) {
     
     int result = processData(test_input, &head, MAX_SIZE);
     
-    LOG("Processing completed");
+
     
     return 0;
 }

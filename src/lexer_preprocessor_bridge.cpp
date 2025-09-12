@@ -29,11 +29,11 @@ LexerPreprocessorBridge::~LexerPreprocessorBridge() {
 }
 
 bool LexerPreprocessorBridge::initialize() {
-    std::cout << "[DEBUG] Inicializando LexerPreprocessorBridge..." << std::endl;
+    // std::cout << "[DEBUG] Inicializando LexerPreprocessorBridge..." << std::endl;
     try {
         // Inicializar interface do preprocessor
         preprocessorInterface = std::make_unique<Preprocessor::PreprocessorLexerInterface>();
-        std::cout << "[DEBUG] PreprocessorLexerInterface criada" << std::endl;
+        // std::cout << "[DEBUG] PreprocessorLexerInterface criada" << std::endl;
         
         // Configurar preprocessor
         Preprocessor::PreprocessorConfig ppConfig;
@@ -46,7 +46,7 @@ bool LexerPreprocessorBridge::initialize() {
             std::cout << "[DEBUG] Falha na inicialização da interface do pré-processador" << std::endl;
             return false;
         }
-        std::cout << "[DEBUG] Interface do pré-processador inicializada com sucesso" << std::endl;
+        // std::cout << "[DEBUG] Interface do pré-processador inicializada com sucesso" << std::endl;
         
         // Inicializar error handler
         errorHandler = std::make_unique<Lexer::ErrorHandler>();
@@ -57,7 +57,7 @@ bool LexerPreprocessorBridge::initialize() {
         }
         
         isInitialized = true;
-        std::cout << "[DEBUG] LexerPreprocessorBridge inicializado com sucesso" << std::endl;
+        // std::cout << "[DEBUG] LexerPreprocessorBridge inicializado com sucesso" << std::endl;
         return true;
         
     } catch (const std::exception& e) {
@@ -69,28 +69,28 @@ bool LexerPreprocessorBridge::initialize() {
 }
 
 bool LexerPreprocessorBridge::processFile(const std::string& filename) {
-    std::cout << "[DEBUG] LexerPreprocessorBridge::processFile chamado para: " << filename << std::endl;
+    // std::cout << "[DEBUG] LexerPreprocessorBridge::processFile chamado para: " << filename << std::endl;
     if (!isInitialized) {
-        std::cout << "[DEBUG] Bridge não inicializado, inicializando..." << std::endl;
+        // std::cout << "[DEBUG] Bridge não inicializado, inicializando..." << std::endl;
         if (!initialize()) {
-            std::cout << "[DEBUG] Falha na inicialização do bridge" << std::endl;
+            // std::cout << "[DEBUG] Falha na inicialização do bridge" << std::endl;
             return false;
         }
     }
     
     try {
         // Processar arquivo através do preprocessor
-        std::cout << "[DEBUG] Chamando preprocessorInterface->processFile..." << std::endl;
+        // std::cout << "[DEBUG] Chamando preprocessorInterface->processFile..." << std::endl;
         lastProcessingResult = preprocessorInterface->processFile(filename);
-        std::cout << "[DEBUG] Resultado do processamento: hasErrors=" << lastProcessingResult.hasErrors << std::endl;
+         // std::cout << "[DEBUG] Resultado do processamento: hasErrors=" << lastProcessingResult.hasErrors << std::endl;
         
         if (lastProcessingResult.hasErrors) {
-            std::cout << "[DEBUG] Processamento falhou com erros - implementando fallback para código original" << std::endl;
+             std::cout << "[DEBUG] Processamento falhou com erros - implementando fallback para código original" << std::endl;
             
             // FALLBACK: Ler e processar código original sem pré-processamento
             std::ifstream file(filename);
             if (!file.is_open()) {
-                std::cout << "[DEBUG] Erro: não foi possível abrir arquivo para fallback" << std::endl;
+                 std::cout << "[DEBUG] Erro: não foi possível abrir arquivo para fallback" << std::endl;
                 return false;
             }
             
@@ -98,8 +98,8 @@ bool LexerPreprocessorBridge::processFile(const std::string& filename) {
                                    std::istreambuf_iterator<char>());
             file.close();
             
-            std::cout << "[DEBUG] FALLBACK: Processando código original sem pré-processamento" << std::endl;
-            std::cout << "[DEBUG] Código original tem " << originalCode.length() << " caracteres" << std::endl;
+             std::cout << "[DEBUG] FALLBACK: Processando código original sem pré-processamento" << std::endl;
+             std::cout << "[DEBUG] Código original tem " << originalCode.length() << " caracteres" << std::endl;
             
             // Limpar resultado anterior e configurar para código original
             lastProcessingResult.processedCode = originalCode;
@@ -115,14 +115,14 @@ bool LexerPreprocessorBridge::processFile(const std::string& filename) {
             hasProcessedInput = true;
             currentTokenIndex = 0;
             
-            std::cout << "[DEBUG] FALLBACK: Processamento do código original concluído" << std::endl;
+             std::cout << "[DEBUG] FALLBACK: Processamento do código original concluído" << std::endl;
             return true; // Retorna true para permitir análise léxica do código original
         }
         
-        std::cout << "[DEBUG] Processamento bem-sucedido, código processado tem " << lastProcessingResult.processedCode.length() << " caracteres" << std::endl;
+         // std::cout << "[DEBUG] Processamento bem-sucedido, código processado tem " << lastProcessingResult.processedCode.length() << " caracteres" << std::endl;
         
         // DEBUG: Imprimir o código processado completo
-        std::cout << "[DEBUG] CÓDIGO PROCESSADO PELO PREPROCESSOR:" << std::endl;
+        std::cout << " CÓDIGO PROCESSADO PELO PREPROCESSOR:" << std::endl;
         std::cout << "========================================" << std::endl;
         std::cout << lastProcessingResult.processedCode << std::endl;
         std::cout << "========================================" << std::endl;
@@ -383,7 +383,7 @@ void LexerPreprocessorBridge::setupErrorIntegration() {
             }
         });
         
-        std::cout << "[DEBUG] Integração de erros configurada entre preprocessor e lexer" << std::endl;
+        // std::cout << "[DEBUG] Integração de erros configurada entre preprocessor e lexer" << std::endl;
     }
 }
 

@@ -440,17 +440,46 @@ std::string MacroProcessor::expandMacroRecursively(const std::string& text) {
             }
             
             if (parenPos < result.length() && result[parenPos] == '(') {
-                // Encontra o ')' correspondente
+                // Encontra o ')' correspondente considerando aninhamento
                 size_t argStart = parenPos + 1;
                 size_t parenCount = 1;
+                size_t braceCount = 0;
                 size_t argEnd = argStart;
+                bool inString = false;
+                bool inChar = false;
+                bool escaped = false;
                 
                 while (argEnd < result.length() && parenCount > 0) {
-                    if (result[argEnd] == '(') {
-                        parenCount++;
-                    } else if (result[argEnd] == ')') {
-                        parenCount--;
+                    char c = result[argEnd];
+                    
+                    if (escaped) {
+                        escaped = false;
+                        argEnd++;
+                        continue;
                     }
+                    
+                    if (c == '\\') {
+                        escaped = true;
+                        argEnd++;
+                        continue;
+                    }
+                    
+                    if (c == '\"' && !inChar) {
+                        inString = !inString;
+                    } else if (c == '\'' && !inString) {
+                        inChar = !inChar;
+                    } else if (!inString && !inChar) {
+                        if (c == '(') {
+                            parenCount++;
+                        } else if (c == ')') {
+                            parenCount--;
+                        } else if (c == '{') {
+                            braceCount++;
+                        } else if (c == '}') {
+                            braceCount--;
+                        }
+                    }
+                    
                     if (parenCount > 0) {
                         argEnd++;
                     }
@@ -696,10 +725,12 @@ std::vector<std::string> MacroProcessor::parseArgumentList(const std::string& ar
         return arguments;
     }
     
-    // Parser simples que considera parênteses balanceados
+    // Parser que considera parênteses e chaves balanceados
     std::string current;
     int parenLevel = 0;
+    int braceLevel = 0;
     bool inString = false;
+    bool inChar = false;
     bool escaped = false;
     
     for (char c : argumentList) {
@@ -715,13 +746,19 @@ std::vector<std::string> MacroProcessor::parseArgumentList(const std::string& ar
             continue;
         }
         
-        if (c == '\"') {
+        if (c == '\"' && !inChar) {
             inString = !inString;
             current += c;
             continue;
         }
         
-        if (inString) {
+        if (c == '\'' && !inString) {
+            inChar = !inChar;
+            current += c;
+            continue;
+        }
+        
+        if (inString || inChar) {
             current += c;
             continue;
         }
@@ -732,7 +769,13 @@ std::vector<std::string> MacroProcessor::parseArgumentList(const std::string& ar
         } else if (c == ')') {
             parenLevel--;
             current += c;
-        } else if (c == ',' && parenLevel == 0) {
+        } else if (c == '{') {
+            braceLevel++;
+            current += c;
+        } else if (c == '}') {
+            braceLevel--;
+            current += c;
+        } else if (c == ',' && parenLevel == 0 && braceLevel == 0) {
             arguments.push_back(trimWhitespace(current));
             current.clear();
         } else {

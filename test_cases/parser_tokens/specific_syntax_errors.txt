@@ -1,0 +1,48 @@
+# Arquivo de teste para erros específicos de sintaxe
+# Erros dentro de estruturas válidas para melhor detecção
+
+# Teste 1: Função válida com erro interno - expressão incompleta
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'test' │ L1:C5 │ Identificadores
+3. LEFT_PAREN           │ '(' │ L1:C9 │ Delimitadores
+4. RIGHT_PAREN          │ ')' │ L1:C10 │ Delimitadores
+5. LEFT_BRACE           │ '{' │ L1:C12 │ Delimitadores
+6. INT                  │ 'int' │ L2:C5 │ Palavras-chave
+7. IDENTIFIER           │ 'x' │ L2:C9 │ Identificadores
+8. ASSIGN               │ '=' │ L2:C11 │ Operadores
+9. INTEGER_LITERAL      │ '5' │ L2:C13 │ Literais
+10. PLUS                │ '+' │ L2:C15 │ Operadores
+# Operando ausente após '+' - deve causar erro
+11. SEMICOLON           │ ';' │ L2:C17 │ Pontuação
+12. RIGHT_BRACE         │ '}' │ L3:C1 │ Delimitadores
+
+# Teste 2: Função válida com if incompleto
+13. INT                 │ 'int' │ L5:C1 │ Palavras-chave
+14. IDENTIFIER          │ 'main' │ L5:C5 │ Identificadores
+15. LEFT_PAREN          │ '(' │ L5:C9 │ Delimitadores
+16. RIGHT_PAREN         │ ')' │ L5:C10 │ Delimitadores
+17. LEFT_BRACE          │ '{' │ L5:C12 │ Delimitadores
+18. IF                  │ 'if' │ L6:C5 │ Palavras-chave
+19. LEFT_PAREN          │ '(' │ L6:C8 │ Delimitadores
+20. IDENTIFIER          │ 'x' │ L6:C9 │ Identificadores
+21. GREATER             │ '>' │ L6:C11 │ Operadores
+# Operando ausente após '>' - deve causar erro
+22. RIGHT_PAREN         │ ')' │ L6:C13 │ Delimitadores
+23. LEFT_BRACE          │ '{' │ L6:C15 │ Delimitadores
+24. RIGHT_BRACE         │ '}' │ L6:C16 │ Delimitadores
+25. RIGHT_BRACE         │ '}' │ L7:C1 │ Delimitadores
+
+# Teste 3: Função válida com chamada de função malformada
+26. VOID                │ 'void' │ L9:C1 │ Palavras-chave
+27. IDENTIFIER          │ 'func' │ L9:C6 │ Identificadores
+28. LEFT_PAREN          │ '(' │ L9:C10 │ Delimitadores
+29. RIGHT_PAREN         │ ')' │ L9:C11 │ Delimitadores
+30. LEFT_BRACE          │ '{' │ L9:C13 │ Delimitadores
+31. IDENTIFIER          │ 'printf' │ L10:C5 │ Identificadores
+32. LEFT_PAREN          │ '(' │ L10:C11 │ Delimitadores
+33. STRING_LITERAL      │ '"hello"' │ L10:C12 │ Literais
+34. COMMA               │ ',' │ L10:C19 │ Pontuação
+# Argumento ausente após vírgula - deve causar erro
+35. RIGHT_PAREN         │ ')' │ L10:C21 │ Delimitadores
+36. SEMICOLON           │ ';' │ L10:C22 │ Pontuação
+37. RIGHT_BRACE         │ '}' │ L11:C1 │ Delimitadores

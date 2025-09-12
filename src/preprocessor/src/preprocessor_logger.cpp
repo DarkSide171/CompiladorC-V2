@@ -68,8 +68,6 @@ PreprocessorLogger::PreprocessorLogger(LogLevel level)
       bufferingEnabled(false), maxBufferSize(1000), maxFileSize(10 * 1024 * 1024), // 10MB
       logDirectory("./logs") {
     statistics.reset();
-    // Debug temporário: forçar nível DEBUG
-    currentLogLevel = LogLevel::DEBUG;
 }
 
 PreprocessorLogger::~PreprocessorLogger() {

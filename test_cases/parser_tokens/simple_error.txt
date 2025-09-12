@@ -1,0 +1,3 @@
+// Teste simples de erro - falta semicolon
+INT IDENTIFIER:x ASSIGN INTEGER:5
+INT IDENTIFIER:y ASSIGN INTEGER:10 SEMICOLON

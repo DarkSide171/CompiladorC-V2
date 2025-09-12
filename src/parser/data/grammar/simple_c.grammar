@@ -1,0 +1,312 @@
+# Simple C Grammar - Minimal LL(1) Compatible
+# For testing parser loading and basic functionality
+
+# Start symbol
+START: program
+
+# Program structure
+program:
+    declaration_list
+    ;
+
+declaration_list:
+    declaration declaration_list_tail
+    ;
+
+declaration_list_tail:
+    declaration declaration_list_tail
+    | /* empty */
+    ;
+
+declaration:
+    'typedef' type_specifier identifier ';'
+    | type_specifier identifier declaration_continuation
+    ;
+
+declaration_continuation:
+    array_declarator_opt declaration_suffix
+    | '(' parameter_list_opt ')' compound_statement
+    ;
+
+parameter_list_opt:
+    parameter_list
+    | /* empty */
+    ;
+
+parameter_list:
+    parameter_declaration parameter_list_tail
+    ;
+
+parameter_list_tail:
+    ',' parameter_declaration parameter_list_tail
+    | /* empty */
+    ;
+
+parameter_declaration:
+    type_specifier declarator
+    ;
+
+declarator:
+    pointer_opt direct_declarator
+    ;
+
+pointer_opt:
+    '*' pointer_opt
+    | /* empty */
+    ;
+
+direct_declarator:
+    identifier array_declarator_opt
+    ;
+
+array_declarator_opt:
+    '[' constant_expression ']' array_declarator_opt
+    | /* empty */
+    ;
+
+constant_expression:
+    constant
+    ;
+
+declaration_suffix:
+    ';'
+    | '(' ')' compound_statement
+    ;
+
+type_specifier:
+    'int'
+    | 'float'
+    | 'double'
+    | 'char'
+    | 'void'
+    | struct_specifier
+    ;
+
+struct_specifier:
+    'struct' identifier struct_body_opt
+    ;
+
+struct_body_opt:
+    '{' struct_declaration_list '}'
+    | /* empty */
+    ;
+
+struct_declaration_list:
+    struct_declaration struct_declaration_list_tail
+    ;
+
+struct_declaration_list_tail:
+    struct_declaration struct_declaration_list_tail
+    | /* empty */
+    ;
+
+struct_declaration:
+    type_specifier declarator ';'
+    ;
+
+# Compound statement with declarations and statements
+compound_statement:
+    '{' block_item_list_opt '}'
+    ;
+
+block_item_list_opt:
+    block_item_list
+    | /* empty */
+    ;
+
+block_item_list:
+    block_item block_item_list_tail
+    ;
+
+block_item_list_tail:
+    block_item block_item_list_tail
+    | /* empty */
+    ;
+
+block_item:
+    declaration
+    | statement
+    ;
+
+
+
+# Simple statements
+statement:
+    identifier_statement
+    | ';'
+    | if_statement
+    | while_statement
+    | for_statement
+    | return_statement
+    ;
+
+while_statement:
+    'while' '(' expression ')' statement
+    ;
+
+for_statement:
+    'for' '(' for_init_opt ';' for_condition_opt ';' for_update_opt ')' statement
+    ;
+
+for_init_opt:
+    identifier_statement
+    | /* empty */
+    ;
+
+for_condition_opt:
+    expression
+    | /* empty */
+    ;
+
+for_update_opt:
+    identifier_statement
+    | /* empty */
+    ;
+
+if_statement:
+    'if' '(' expression ')' statement else_clause
+    ;
+
+else_clause:
+    'else' statement
+    | /* empty */
+    ;
+
+identifier_statement:
+    identifier identifier_suffix
+    ;
+
+identifier_suffix:
+    assignment_operator expression ';'
+    | term_tail expression_tail ';'
+    ;
+
+assignment_operator:
+    '='
+    | '+='
+    | '-='
+    | '*='
+    | '/='
+    ;
+
+return_statement:
+    'return' return_expression_opt ';'
+    ;
+
+return_expression_opt:
+    expression
+    | /* empty */
+    ;
+
+# Expressions with logical, comparison and arithmetic operators
+expression:
+    logical_or_expression
+    ;
+
+logical_or_expression:
+    logical_and_expression logical_or_tail
+    ;
+
+logical_or_tail:
+    '||' logical_and_expression logical_or_tail
+    | /* empty */
+    ;
+
+logical_and_expression:
+    unary_expression logical_and_tail
+    ;
+
+logical_and_tail:
+    '&&' unary_expression logical_and_tail
+    | /* empty */
+    ;
+
+unary_expression:
+    '!' unary_expression
+    | '++' unary_expression
+    | '--' unary_expression
+    | '*' unary_expression
+    | '&' unary_expression
+    | postfix_expression
+    ;
+
+postfix_expression:
+    relational_expression postfix_increment_opt
+    ;
+
+postfix_increment_opt:
+    '++'
+    | '--'
+    | /* empty */
+    ;
+
+relational_expression:
+    arithmetic_expression relational_tail
+    ;
+
+relational_tail:
+    '==' arithmetic_expression relational_tail
+    | '!=' arithmetic_expression relational_tail
+    | '<' arithmetic_expression relational_tail
+    | '>' arithmetic_expression relational_tail
+    | '<=' arithmetic_expression relational_tail
+    | '>=' arithmetic_expression relational_tail
+    | /* empty */
+    ;
+
+arithmetic_expression:
+    term expression_tail
+    ;
+
+expression_tail:
+    '+' term expression_tail
+    | '-' term expression_tail
+    | /* empty */
+    ;
+
+term:
+    primary term_tail
+    ;
+
+term_tail:
+    '*' primary term_tail
+    | '/' primary term_tail
+    | /* empty */
+    ;
+
+primary:
+    identifier postfix_suffix
+    | constant
+    | '(' expression ')'
+    ;
+
+postfix_suffix:
+    array_access_opt function_call_opt
+    ;
+
+function_call_opt:
+    '(' argument_list_opt ')' function_call_opt
+    | /* empty */
+    ;
+
+argument_list_opt:
+    argument_list
+    | /* empty */
+    ;
+
+argument_list:
+    expression argument_list_tail
+    ;
+
+argument_list_tail:
+    ',' expression argument_list_tail
+    | /* empty */
+    ;
+
+array_access_opt:
+    '[' expression ']' array_access_opt
+    | /* empty */
+    ;
+
+# Terminals (tokens) - handled by lexer
+# identifier and constant are terminal symbols provided by the lexer

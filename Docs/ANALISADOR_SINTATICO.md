@@ -1,8 +1,8 @@
-# Documentação do Processador Sintático (Parser) C
+# Documentação do Analisador Sintático (Parser) C
 
 ## Visão Geral
 
-O **Processador Sintático** é o componente responsável pela análise sintática do código C pré-processado, construindo uma Árvore de Sintaxe Abstrata (AST) que representa a estrutura hierárquica do programa. Este módulo integra-se diretamente com o analisador léxico para consumir tokens e com o analisador semântico para fornecer a estrutura sintática validada.
+O **Analisador Sintático** é o componente responsável pela análise sintática do código C pré-processado, construindo uma Árvore de Sintaxe Abstrata (AST) que representa a estrutura hierárquica do programa. Este módulo integra-se diretamente com o analisador léxico para consumir tokens e com o analisador semântico para fornecer a estrutura sintática validada.
 
 ### Características Principais
 
@@ -37,7 +37,7 @@ O **Processador Sintático** é o componente responsável pela análise sintáti
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Analisador    │───▶│   Processador    │───▶│   Analisador    │
+│   Analisador    │───▶│   Analisador     │───▶│   Analisador    │
 │     Léxico      │    │    Sintático     │    │   Semântico     │
 │    (Tokens)     │    │     (AST)        │    │  (Validação)    │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
@@ -52,11 +52,13 @@ O **Processador Sintático** é o componente responsável pela análise sintáti
 
 ### Fluxo de Processamento
 
-1. **Entrada**: Recebe stream de tokens do analisador léxico
+1. **Entrada**: Recebe stream de tokens via interface `TokenStream` (tokens vêm do lexer, que pode ter processado código do preprocessor)
 2. **Parsing**: Aplica regras gramaticais para construir AST
 3. **Validação**: Verifica correção sintática e estrutural
 4. **Recuperação**: Trata erros e tenta continuar análise
 5. **Saída**: Fornece AST validada para análise semântica
+
+**Nota**: O parser é agnóstico à origem dos tokens - trabalha com qualquer implementação de `TokenStream`
 
 ---
 
@@ -110,7 +112,7 @@ src/parser/
 
 #### Headers (include/)
 
-- **`parser.hpp`**: Interface principal do processador sintático
+- **`parser.hpp`**: Interface principal do Analisador sintático
 - **`ast.hpp`**: Definições completas da Árvore de Sintaxe Abstrata
 - **`grammar.hpp`**: Regras gramaticais e sistema de produção
 - **`error_recovery.hpp`**: Estratégias de recuperação de erros sintáticos
@@ -161,33 +163,50 @@ Cada componente é independente e pode ser:
 
 ## Integração com Outros Componentes
 
-### Interface com Analisador Léxico
+### Interface com Analisador Léxico (Principal)
 
 ```cpp
-// Integração direta com o sistema de tokens
-class ParserLexerInterface {
+// FLUXO PRINCIPAL: Lexer → Parser
+// O parser recebe tokens através de uma interface TokenStream
+class TokenStream {
 public:
-    // Recebe tokens do lexer
-    Token getCurrentToken() const;
-    Token peekNextToken() const;
-    void consumeToken();
+    virtual ~TokenStream() = default;
+    virtual Token peek(size_t lookahead = 0) const = 0;
+    virtual Token consume() = 0;
+    virtual bool isAtEnd() const = 0;
+    virtual size_t getPosition() const = 0;
+    virtual void setPosition(size_t pos) = 0;
+};
+
+// Implementação específica para integração lexer-parser
+class LexerParserBridge : public TokenStream {
+public:
+    // Implementa TokenStream para fornecer tokens ao parser
+    Token peek(size_t lookahead = 0) const override;
+    Token consume() override;
+    bool isAtEnd() const override;
     
-    // Sincronização de posições
+    // Informações de contexto do lexer
     SourcePosition getCurrentPosition() const;
     void synchronizePosition();
 };
 ```
 
-### Interface com Pré-processador
+### Interface com Pré-processador (Indireta)
 
 ```cpp
-// Utiliza mapeamento de posições do preprocessor
-class ParserPreprocessorInterface {
+// IMPORTANTE: O parser NÃO recebe dados diretamente do preprocessor!
+// FLUXO REAL: Preprocessor → Lexer → Parser
+// Esta interface é usada apenas para mapeamento de posições quando necessário.
+
+class PreprocessorParserBridge {
 public:
-    // Mapeamento de posições
+    // Mapeamento de posições (quando tokens vêm de código pré-processado)
     SourcePosition mapToOriginalPosition(const SourcePosition& expanded_pos);
     bool isMacroExpansion(const SourcePosition& pos);
     std::string getMacroName(const SourcePosition& pos);
+    
+    // NOTA: Estes métodos são acessados indiretamente através do lexer
 };
 ```
 
@@ -245,13 +264,41 @@ struct ParserDiagnostic {
 
 ## Arquitetura de Comunicação
 
-### Pipeline Estendido
+### Pipeline Correto
 
 ```
-Preprocessor ──┐
-               ├──▶ Parser ──▶ Semantic Analyzer
-Lexer ─────────┘
+                    ┌─────────────────┐
+                    │   Código Fonte  │
+                    └─────────────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  Preprocessor   │ (Opcional)
+                    │ (Macros, #include)│
+                    └─────────────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │     Lexer       │
+                    │   (Tokenização) │
+                    └─────────────────┘
+                             │
+                             ▼ TokenStream
+                    ┌─────────────────┐
+                    │     Parser      │
+                    │ (Análise Sintática)│
+                    └─────────────────┘
+                             │
+                             ▼ AST
+                    ┌─────────────────┐
+                    │ Semantic Analyzer│
+                    └─────────────────┘
 ```
+
+**FLUXO DE DADOS:**
+- **Preprocessor → Lexer**: Código processado (string)
+- **Lexer → Parser**: Stream de tokens (TokenStream)
+- **Parser → Semantic**: Árvore sintática (AST)
 
 ### Sistema de Configuração Integrado
 
@@ -2552,11 +2599,12 @@ TEST_F(IntegrationTest, ParseWithPreprocessor) {
   - Implementar conversão de tokens
   - Implementar tratamento de erros integrado
 
-##### **5.2 Integração com Preprocessador**
+##### **5.2 Mapeamento de Posições (Preprocessador)**
 - ⏳ **PreprocessorParserBridge** (`preprocessor_parser_bridge.hpp/cpp`)
-  - Implementar integração com preprocessador
-  - Implementar mapeamento de posições expandidas
-  - Implementar tratamento de diretivas
+  - Implementar mapeamento de posições entre código expandido e original
+  - Implementar identificação de expansões de macro
+  - Implementar utilitários para diagnósticos precisos
+  - **NOTA**: Não há integração direta - apenas mapeamento via lexer
 
 ##### **5.3 Interface para Analisador Semântico**
 - ⏳ **SemanticInterface** (`semantic_interface.hpp/cpp`)
@@ -2566,8 +2614,8 @@ TEST_F(IntegrationTest, ParseWithPreprocessor) {
 
 ##### **5.4 Testes de Integração**
 - ⏳ Testes completos lexer + parser
-- ⏳ Testes preprocessador + parser
-- ⏳ Testes de pipeline completo
+- ⏳ Testes de pipeline (preprocessador → lexer → parser)
+- ⏳ Testes de mapeamento de posições com código pré-processado
 - ⏳ Testes com programas C reais
 
 #### **Fase 6: Validação e Otimização Final (Semanas 12-13)**
@@ -2731,7 +2779,7 @@ Fase 6 (Validação) ← Fase 5 (Integração) ← Fase 4 (Avançadas)
 
 ## Conclusão
 
-Esta documentação serve como um **guia arquitetural completo** para a implementação do processador sintático do compilador C. O design modular, as interfaces bem definidas e a estratégia de implementação em fases garantem:
+Esta documentação serve como um **guia arquitetural completo** para a implementação do Analisador sintático do compilador C. O design modular, as interfaces bem definidas e a estratégia de implementação em fases garantem:
 
 ### Pontos Fortes da Arquitetura
 

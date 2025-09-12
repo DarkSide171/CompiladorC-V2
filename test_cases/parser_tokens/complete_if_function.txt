@@ -1,0 +1,26 @@
+# Função completa com if statement: int main() { if (x > 0) { return 1; } else { return -1; } }
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'main' │ L1:C5 │ Identificadores
+3. LEFT_PAREN           │ '(' │ L1:C9 │ Delimitadores
+4. RIGHT_PAREN          │ ')' │ L1:C10 │ Delimitadores
+5. LEFT_BRACE           │ '{' │ L1:C12 │ Delimitadores
+6. IF                   │ 'if' │ L1:C14 │ Palavras-chave
+7. LEFT_PAREN           │ '(' │ L1:C17 │ Delimitadores
+8. IDENTIFIER           │ 'x' │ L1:C18 │ Identificadores
+9. GREATER_THAN         │ '>' │ L1:C20 │ Operadores
+10. INTEGER_LITERAL     │ '0' │ L1:C22 │ Literais
+11. RIGHT_PAREN         │ ')' │ L1:C23 │ Delimitadores
+12. LEFT_BRACE          │ '{' │ L1:C25 │ Delimitadores
+13. RETURN              │ 'return' │ L1:C27 │ Palavras-chave
+14. INTEGER_LITERAL     │ '1' │ L1:C34 │ Literais
+15. SEMICOLON           │ ';' │ L1:C35 │ Pontuação
+16. RIGHT_BRACE         │ '}' │ L1:C37 │ Delimitadores
+17. ELSE                │ 'else' │ L1:C39 │ Palavras-chave
+18. LEFT_BRACE          │ '{' │ L1:C44 │ Delimitadores
+19. RETURN              │ 'return' │ L1:C46 │ Palavras-chave
+20. MINUS               │ '-' │ L1:C53 │ Operadores
+21. INTEGER_LITERAL     │ '1' │ L1:C54 │ Literais
+22. SEMICOLON           │ ';' │ L1:C55 │ Pontuação
+23. RIGHT_BRACE         │ '}' │ L1:C57 │ Delimitadores
+24. RIGHT_BRACE         │ '}' │ L1:C59 │ Delimitadores
+25. END_OF_FILE         │ '' │ L1:C60 │ Outros

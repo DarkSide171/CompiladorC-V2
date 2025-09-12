@@ -1,0 +1,5 @@
+# Teste simples: int x;
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'x' │ L1:C5 │ Identificadores
+3. SEMICOLON            │ ';' │ L1:C6 │ Delimitadores
+4. END_OF_FILE          │ '' │ L1:C7 │ Fim de arquivo

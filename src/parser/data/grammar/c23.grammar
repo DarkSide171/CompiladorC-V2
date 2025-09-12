@@ -1,0 +1,628 @@
+# C23 Grammar Definition
+# Based on ISO/IEC 9899:2023 (C2x/C23)
+# Latest C standard with modern features
+
+# Start symbol
+START: translation_unit
+
+# Translation unit
+translation_unit:
+    external_declaration
+    | translation_unit external_declaration
+    ;
+
+external_declaration:
+    function_definition
+    | declaration
+    | static_assert_declaration
+    ;
+
+# Function definitions
+function_definition:
+    attribute_specifier_sequence declaration_specifiers declarator declaration_list compound_statement
+    | declaration_specifiers declarator declaration_list compound_statement
+    | attribute_specifier_sequence declaration_specifiers declarator compound_statement
+    | declaration_specifiers declarator compound_statement
+    | attribute_specifier_sequence declarator declaration_list compound_statement
+    | declarator declaration_list compound_statement
+    | attribute_specifier_sequence declarator compound_statement
+    | declarator compound_statement
+    ;
+
+declaration_list:
+    declaration
+    | declaration_list declaration
+    ;
+
+# Declarations
+declaration:
+    attribute_specifier_sequence declaration_specifiers ';'
+    | declaration_specifiers ';'
+    | attribute_specifier_sequence declaration_specifiers init_declarator_list ';'
+    | declaration_specifiers init_declarator_list ';'
+    | static_assert_declaration
+    ;
+
+static_assert_declaration:
+    '_Static_assert' '(' constant_expression ',' STRING_LITERAL ')' ';'
+    | '_Static_assert' '(' constant_expression ')' ';'     # C23: Single argument
+    ;
+
+declaration_specifiers:
+    storage_class_specifier
+    | storage_class_specifier declaration_specifiers
+    | type_specifier
+    | type_specifier declaration_specifiers
+    | type_qualifier
+    | type_qualifier declaration_specifiers
+    | function_specifier
+    | function_specifier declaration_specifiers
+    | alignment_specifier
+    | alignment_specifier declaration_specifiers
+    ;
+
+init_declarator_list:
+    init_declarator
+    | init_declarator_list ',' init_declarator
+    ;
+
+init_declarator:
+    declarator
+    | declarator '=' initializer
+    ;
+
+# Storage class specifiers
+storage_class_specifier:
+    'typedef'
+    | 'extern'
+    | 'static'
+    | 'auto'            # C23: auto type deduction
+    | 'register'
+    | '_Thread_local'
+    ;
+
+# Type specifiers (C23 additions)
+type_specifier:
+    'void'
+    | 'char'
+    | 'short'
+    | 'int'
+    | 'long'
+    | 'float'
+    | 'double'
+    | 'signed'
+    | 'unsigned'
+    | '_Bool'
+    | '_Complex'
+    | '_Imaginary'
+    | '_BitInt' '(' constant_expression ')'     # C23: Bit-precise integers
+    | 'typeof' '(' expression ')'               # C23: typeof operator
+    | 'typeof' '(' type_name ')'
+    | 'typeof_unqual' '(' expression ')'        # C23: typeof_unqual
+    | 'typeof_unqual' '(' type_name ')'
+    | '_Decimal128'                             # C23: Decimal floating types
+    | '_Decimal32'
+    | '_Decimal64'
+    | atomic_type_specifier
+    | struct_or_union_specifier
+    | enum_specifier
+    | typedef_name
+    ;
+
+# Atomic type specifier
+atomic_type_specifier:
+    '_Atomic' '(' type_name ')'
+    ;
+
+# Function specifiers
+function_specifier:
+    'inline'
+    | '_Noreturn'
+    ;
+
+# Alignment specifier
+alignment_specifier:
+    '_Alignas' '(' type_name ')'
+    | '_Alignas' '(' constant_expression ')'
+    ;
+
+# Attribute specifiers (C23)
+attribute_specifier_sequence:
+    attribute_specifier
+    | attribute_specifier_sequence attribute_specifier
+    ;
+
+attribute_specifier:
+    '[' '[' attribute_list ']' ']'
+    ;
+
+attribute_list:
+    attribute
+    | attribute_list ',' attribute
+    ;
+
+attribute:
+    attribute_token
+    | attribute_token attribute_argument_clause
+    ;
+
+attribute_token:
+    IDENTIFIER
+    | attribute_prefixed_token
+    ;
+
+attribute_prefixed_token:
+    attribute_prefix '::' IDENTIFIER
+    ;
+
+attribute_prefix:
+    IDENTIFIER
+    ;
+
+attribute_argument_clause:
+    '(' balanced_token_sequence ')'
+    ;
+
+balanced_token_sequence:
+    balanced_token
+    | balanced_token_sequence balanced_token
+    ;
+
+balanced_token:
+    '(' balanced_token_sequence ')'
+    | '[' balanced_token_sequence ']'
+    | '{' balanced_token_sequence '}'
+    | any_token_except_parentheses_brackets_braces
+    ;
+
+struct_or_union_specifier:
+    struct_or_union attribute_specifier_sequence IDENTIFIER '{' struct_declaration_list '}'
+    | struct_or_union IDENTIFIER '{' struct_declaration_list '}'
+    | struct_or_union attribute_specifier_sequence '{' struct_declaration_list '}'
+    | struct_or_union '{' struct_declaration_list '}'
+    | struct_or_union IDENTIFIER
+    ;
+
+struct_or_union:
+    'struct'
+    | 'union'
+    ;
+
+struct_declaration_list:
+    struct_declaration
+    | struct_declaration_list struct_declaration
+    ;
+
+struct_declaration:
+    attribute_specifier_sequence specifier_qualifier_list struct_declarator_list ';'
+    | specifier_qualifier_list struct_declarator_list ';'
+    | attribute_specifier_sequence specifier_qualifier_list ';'
+    | specifier_qualifier_list ';'
+    | static_assert_declaration
+    ;
+
+specifier_qualifier_list:
+    type_specifier specifier_qualifier_list
+    | type_specifier
+    | type_qualifier specifier_qualifier_list
+    | type_qualifier
+    | alignment_specifier specifier_qualifier_list
+    | alignment_specifier
+    ;
+
+struct_declarator_list:
+    struct_declarator
+    | struct_declarator_list ',' struct_declarator
+    ;
+
+struct_declarator:
+    declarator
+    | ':' constant_expression
+    | declarator ':' constant_expression
+    ;
+
+enum_specifier:
+    'enum' attribute_specifier_sequence IDENTIFIER enum_type_specifier '{' enumerator_list '}'
+    | 'enum' IDENTIFIER enum_type_specifier '{' enumerator_list '}'
+    | 'enum' attribute_specifier_sequence enum_type_specifier '{' enumerator_list '}'
+    | 'enum' enum_type_specifier '{' enumerator_list '}'
+    | 'enum' attribute_specifier_sequence IDENTIFIER '{' enumerator_list '}'
+    | 'enum' IDENTIFIER '{' enumerator_list '}'
+    | 'enum' attribute_specifier_sequence '{' enumerator_list '}'
+    | 'enum' '{' enumerator_list '}'
+    | 'enum' IDENTIFIER
+    | 'enum' attribute_specifier_sequence IDENTIFIER enum_type_specifier '{' enumerator_list ',' '}'
+    | 'enum' IDENTIFIER enum_type_specifier '{' enumerator_list ',' '}'
+    | 'enum' attribute_specifier_sequence enum_type_specifier '{' enumerator_list ',' '}'
+    | 'enum' enum_type_specifier '{' enumerator_list ',' '}'
+    | 'enum' attribute_specifier_sequence IDENTIFIER '{' enumerator_list ',' '}'
+    | 'enum' IDENTIFIER '{' enumerator_list ',' '}'
+    | 'enum' attribute_specifier_sequence '{' enumerator_list ',' '}'
+    | 'enum' '{' enumerator_list ',' '}'
+    ;
+
+enum_type_specifier:
+    ':' specifier_qualifier_list
+    ;
+
+enumerator_list:
+    enumerator
+    | enumerator_list ',' enumerator
+    ;
+
+enumerator:
+    IDENTIFIER
+    | IDENTIFIER '=' constant_expression
+    ;
+
+# Type qualifiers
+type_qualifier:
+    'const'
+    | 'volatile'
+    | 'restrict'
+    | '_Atomic'
+    ;
+
+# Declarators
+declarator:
+    pointer direct_declarator
+    | direct_declarator
+    ;
+
+direct_declarator:
+    IDENTIFIER
+    | '(' declarator ')'
+    | direct_declarator '[' type_qualifier_list assignment_expression ']'
+    | direct_declarator '[' 'static' type_qualifier_list assignment_expression ']'
+    | direct_declarator '[' type_qualifier_list 'static' assignment_expression ']'
+    | direct_declarator '[' type_qualifier_list '*' ']'
+    | direct_declarator '[' '*' ']'
+    | direct_declarator '[' assignment_expression ']'
+    | direct_declarator '[' ']'
+    | direct_declarator '(' parameter_type_list ')'
+    | direct_declarator '(' identifier_list ')'
+    | direct_declarator '(' ')'
+    ;
+
+pointer:
+    '*' attribute_specifier_sequence type_qualifier_list
+    | '*' type_qualifier_list
+    | '*' attribute_specifier_sequence
+    | '*'
+    | '*' attribute_specifier_sequence type_qualifier_list pointer
+    | '*' type_qualifier_list pointer
+    | '*' attribute_specifier_sequence pointer
+    | '*' pointer
+    ;
+
+type_qualifier_list:
+    type_qualifier
+    | type_qualifier_list type_qualifier
+    ;
+
+parameter_type_list:
+    parameter_list
+    | parameter_list ',' '...'
+    ;
+
+parameter_list:
+    parameter_declaration
+    | parameter_list ',' parameter_declaration
+    ;
+
+parameter_declaration:
+    attribute_specifier_sequence declaration_specifiers declarator
+    | declaration_specifiers declarator
+    | attribute_specifier_sequence declaration_specifiers abstract_declarator
+    | declaration_specifiers abstract_declarator
+    | attribute_specifier_sequence declaration_specifiers
+    | declaration_specifiers
+    ;
+
+identifier_list:
+    IDENTIFIER
+    | identifier_list ',' IDENTIFIER
+    ;
+
+type_name:
+    specifier_qualifier_list
+    | specifier_qualifier_list abstract_declarator
+    ;
+
+abstract_declarator:
+    pointer
+    | direct_abstract_declarator
+    | pointer direct_abstract_declarator
+    ;
+
+direct_abstract_declarator:
+    '(' abstract_declarator ')'
+    | '[' ']'
+    | '[' assignment_expression ']'
+    | '[' '*' ']'
+    | direct_abstract_declarator '[' ']'
+    | direct_abstract_declarator '[' assignment_expression ']'
+    | direct_abstract_declarator '[' '*' ']'
+    | '(' ')'
+    | '(' parameter_type_list ')'
+    | direct_abstract_declarator '(' ')'
+    | direct_abstract_declarator '(' parameter_type_list ')'
+    ;
+
+typedef_name:
+    IDENTIFIER
+    ;
+
+# Initializers
+initializer:
+    assignment_expression
+    | '{' initializer_list '}'
+    | '{' initializer_list ',' '}'
+    ;
+
+initializer_list:
+    designation initializer
+    | initializer
+    | initializer_list ',' designation initializer
+    | initializer_list ',' initializer
+    ;
+
+designation:
+    designator_list '='
+    ;
+
+designator_list:
+    designator
+    | designator_list designator
+    ;
+
+designator:
+    '[' constant_expression ']'
+    | '.' IDENTIFIER
+    ;
+
+# Statements
+statement:
+    attribute_specifier_sequence labeled_statement
+    | labeled_statement
+    | attribute_specifier_sequence compound_statement
+    | compound_statement
+    | attribute_specifier_sequence expression_statement
+    | expression_statement
+    | attribute_specifier_sequence selection_statement
+    | selection_statement
+    | attribute_specifier_sequence iteration_statement
+    | iteration_statement
+    | attribute_specifier_sequence jump_statement
+    | jump_statement
+    ;
+
+labeled_statement:
+    IDENTIFIER ':' statement
+    | 'case' constant_expression ':' statement
+    | 'default' ':' statement
+    ;
+
+compound_statement:
+    '{' '}'
+    | '{' block_item_list '}'
+    ;
+
+block_item_list:
+    block_item
+    | block_item_list block_item
+    ;
+
+block_item:
+    declaration
+    | statement
+    | label                         # C23: Labels as statements
+    ;
+
+label:
+    attribute_specifier_sequence IDENTIFIER ':'
+    | IDENTIFIER ':'
+    ;
+
+expression_statement:
+    ';'
+    | expression ';'
+    ;
+
+selection_statement:
+    'if' '(' expression ')' statement
+    | 'if' '(' expression ')' statement 'else' statement
+    | 'switch' '(' expression ')' statement
+    ;
+
+iteration_statement:
+    'while' '(' expression ')' statement
+    | 'do' statement 'while' '(' expression ')' ';'
+    | 'for' '(' expression_statement expression_statement ')' statement
+    | 'for' '(' expression_statement expression_statement expression ')' statement
+    | 'for' '(' declaration expression_statement ')' statement
+    | 'for' '(' declaration expression_statement expression ')' statement
+    ;
+
+jump_statement:
+    'goto' IDENTIFIER ';'
+    | 'continue' ';'
+    | 'break' ';'
+    | 'return' ';'
+    | 'return' expression ';'
+    ;
+
+# Expressions
+expression:
+    assignment_expression
+    | expression ',' assignment_expression
+    ;
+
+assignment_expression:
+    conditional_expression
+    | unary_expression assignment_operator assignment_expression
+    ;
+
+assignment_operator:
+    '='
+    | '*='
+    | '/='
+    | '%='
+    | '+='
+    | '-='
+    | '<<='
+    | '>>='
+    | '&='
+    | '^='
+    | '|='
+    ;
+
+conditional_expression:
+    logical_or_expression
+    | logical_or_expression '?' expression ':' conditional_expression
+    ;
+
+constant_expression:
+    conditional_expression
+    ;
+
+logical_or_expression:
+    logical_and_expression
+    | logical_or_expression '||' logical_and_expression
+    ;
+
+logical_and_expression:
+    inclusive_or_expression
+    | logical_and_expression '&&' inclusive_or_expression
+    ;
+
+inclusive_or_expression:
+    exclusive_or_expression
+    | inclusive_or_expression '|' exclusive_or_expression
+    ;
+
+exclusive_or_expression:
+    and_expression
+    | exclusive_or_expression '^' and_expression
+    ;
+
+and_expression:
+    equality_expression
+    | and_expression '&' equality_expression
+    ;
+
+equality_expression:
+    relational_expression
+    | equality_expression '==' relational_expression
+    | equality_expression '!=' relational_expression
+    ;
+
+relational_expression:
+    shift_expression
+    | relational_expression '<' shift_expression
+    | relational_expression '>' shift_expression
+    | relational_expression '<=' shift_expression
+    | relational_expression '>=' shift_expression
+    ;
+
+shift_expression:
+    additive_expression
+    | shift_expression '<<' additive_expression
+    | shift_expression '>>' additive_expression
+    ;
+
+additive_expression:
+    multiplicative_expression
+    | additive_expression '+' multiplicative_expression
+    | additive_expression '-' multiplicative_expression
+    ;
+
+multiplicative_expression:
+    cast_expression
+    | multiplicative_expression '*' cast_expression
+    | multiplicative_expression '/' cast_expression
+    | multiplicative_expression '%' cast_expression
+    ;
+
+cast_expression:
+    unary_expression
+    | '(' type_name ')' cast_expression
+    ;
+
+unary_expression:
+    postfix_expression
+    | '++' unary_expression
+    | '--' unary_expression
+    | unary_operator cast_expression
+    | 'sizeof' unary_expression
+    | 'sizeof' '(' type_name ')'
+    | '_Alignof' '(' type_name ')'
+    ;
+
+unary_operator:
+    '&'
+    | '*'
+    | '+'
+    | '-'
+    | '~'
+    | '!'
+    ;
+
+postfix_expression:
+    primary_expression
+    | postfix_expression '[' expression ']'
+    | postfix_expression '(' ')'
+    | postfix_expression '(' argument_expression_list ')'
+    | postfix_expression '.' IDENTIFIER
+    | postfix_expression '->' IDENTIFIER
+    | postfix_expression '++'
+    | postfix_expression '--'
+    | '(' type_name ')' '{' initializer_list '}'
+    | '(' type_name ')' '{' initializer_list ',' '}'
+    ;
+
+primary_expression:
+    IDENTIFIER
+    | CONSTANT
+    | STRING_LITERAL
+    | '(' expression ')'
+    | generic_selection
+    ;
+
+# Generic selection
+generic_selection:
+    '_Generic' '(' assignment_expression ',' generic_assoc_list ')'
+    ;
+
+generic_assoc_list:
+    generic_association
+    | generic_assoc_list ',' generic_association
+    ;
+
+generic_association:
+    type_name ':' assignment_expression
+    | 'default' ':' assignment_expression
+    ;
+
+argument_expression_list:
+    assignment_expression
+    | argument_expression_list ',' assignment_expression
+    ;
+
+# Terminals (tokens) - C23 additions
+IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*
+CONSTANT: INTEGER_CONSTANT | CHARACTER_CONSTANT | FLOATING_CONSTANT | ENUMERATION_CONSTANT
+STRING_LITERAL: "([^"\\]|\\.)*" | u8?"([^"\\]|\\.)*" | u"([^"\\]|\\.)*" | U"([^"\\]|\\.)*" | L"([^"\\]|\\.)*"
+INTEGER_CONSTANT: [0-9]+[uUlLzZwWbB]*     # C23: New suffixes
+CHARACTER_CONSTANT: '([^'\\]|\\.)+' | u'([^'\\]|\\.)+' | U'([^'\\]|\\.)+' | L'([^'\\]|\\.)+'
+FLOATING_CONSTANT: [0-9]*\.[0-9]+([eE][+-]?[0-9]+)?[fFlLdDwW]? | 0[xX][0-9a-fA-F]*\.[0-9a-fA-F]+[pP][+-]?[0-9]+[fFlLdDwW]?  # C23: Decimal float suffixes
+ENUMERATION_CONSTANT: IDENTIFIER
+
+# Keywords (C23 additions)
+KEYWORDS: auto break case char const continue default do double else enum extern float for goto if inline int long register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while _Alignas _Alignof _Atomic _BitInt _Bool _Complex _Decimal128 _Decimal32 _Decimal64 _Generic _Imaginary _Noreturn _Static_assert _Thread_local typeof typeof_unqual
+
+# Operators and punctuators
+OPERATORS: + - * / % ++ -- & | ^ ~ ! << >> < > <= >= == != && || ? : = += -= *= /= %= &= |= ^= <<= >>= -> . [ ] ( ) { } , ; ... :: # C23: :: for attributes
+
+# Preprocessor tokens (C23 enhancements)
+PREPROCESSOR_DIRECTIVE: '#' .* '\n'

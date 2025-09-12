@@ -1,0 +1,1095 @@
+# C99 Grammar Definition
+# Based on ISO/IEC 9899:1999
+# Extends C89 with new features
+
+# Start symbol
+START: translation_unit
+
+# Translation unit
+translation_unit:
+    external_declaration
+    | translation_unit external_declaration
+    ;
+
+external_declaration:
+    function_definition
+    | declaration
+    ;
+
+# Function definitions
+function_definition:
+    declaration_specifiers declarator declaration_list compound_statement
+    | declaration_specifiers declarator compound_statement
+    | declarator declaration_list compound_statement
+    | declarator compound_statement
+    ;
+
+declaration_list:
+    declaration
+    | declaration_list declaration
+    ;
+
+# Declarations
+declaration:
+    declaration_specifiers ';'
+    | declaration_specifiers init_declarator_list ';'
+    ;
+
+declaration_specifiers:
+    storage_class_specifier
+    | storage_class_specifier declaration_specifiers
+    | type_specifier
+    | type_specifier declaration_specifiers
+    | type_qualifier
+    | type_qualifier declaration_specifiers
+    | function_specifier
+    | function_specifier declaration_specifiers
+    ;
+
+init_declarator_list:
+    init_declarator
+    | init_declarator_list ',' init_declarator
+    ;
+
+init_declarator:
+    declarator
+    | declarator '=' initializer
+    ;
+
+# Storage class specifiers
+storage_class_specifier:
+    'typedef'
+    | 'extern'
+    | 'static'
+    | 'auto'
+    | 'register'
+    ;
+
+# Type specifiers (C99 extensions)
+type_specifier:
+    'void'
+    | 'char'
+    | 'short'
+    | 'int'
+    | 'long'
+    | 'float'
+    | 'double'
+    | 'signed'
+    | 'unsigned'
+    | '_Bool'           # C99 new type
+    | '_Complex'        # C99 new type
+    | '_Imaginary'      # C99 new type
+    | struct_or_union_specifier
+    | enum_specifier
+    | typedef_name
+    ;
+
+# Function specifiers (C99)
+function_specifier:
+    'inline'
+    ;
+
+struct_or_union_specifier:
+    struct_or_union IDENTIFIER '{' struct_declaration_list '}'
+    | struct_or_union '{' struct_declaration_list '}'
+    | struct_or_union IDENTIFIER
+    ;
+
+struct_or_union:
+    'struct'
+    | 'union'
+    ;
+
+struct_declaration_list:
+    struct_declaration
+    | struct_declaration_list struct_declaration
+    ;
+
+struct_declaration:
+    specifier_qualifier_list struct_declarator_list ';'
+    ;
+
+specifier_qualifier_list:
+    type_specifier specifier_qualifier_list
+    | type_specifier
+    | type_qualifier specifier_qualifier_list
+    | type_qualifier
+    ;
+
+struct_declarator_list:
+    struct_declarator
+    | struct_declarator_list ',' struct_declarator
+    ;
+
+struct_declarator:
+    declarator
+    | ':' constant_expression
+    | declarator ':' constant_expression
+    ;
+
+enum_specifier:
+    'enum' '{' enumerator_list '}'
+    | 'enum' IDENTIFIER '{' enumerator_list '}'
+    | 'enum' IDENTIFIER
+    | 'enum' '{' enumerator_list ',' '}'
+    | 'enum' IDENTIFIER '{' enumerator_list ',' '}'
+    ;
+
+enumerator_list:
+    enumerator
+    | enumerator_list ',' enumerator
+    ;
+
+enumerator:
+    IDENTIFIER
+    | IDENTIFIER '=' constant_expression
+    ;
+
+# Type qualifiers (C99 extensions)
+type_qualifier:
+    'const'
+    | 'volatile'
+    | 'restrict'        # C99 new qualifier
+    ;
+
+# Declarators (C99 extensions for VLA)
+declarator:
+    pointer direct_declarator
+    | direct_declarator
+    ;
+
+direct_declarator:
+    IDENTIFIER
+    | '(' declarator ')'
+    | direct_declarator '[' type_qualifier_list assignment_expression ']'
+    | direct_declarator '[' type_qualifier_list ']'
+    | direct_declarator '[' assignment_expression ']'
+    | direct_declarator '[' 'static' type_qualifier_list assignment_expression ']'
+    | direct_declarator '[' type_qualifier_list 'static' assignment_expression ']'
+    | direct_declarator '[' type_qualifier_list '*' ']'
+    | direct_declarator '[' '*' ']'
+    | direct_declarator '[' ']'
+    | direct_declarator '(' parameter_type_list ')'
+    | direct_declarator '(' identifier_list ')'
+    | direct_declarator '(' ')'
+    ;
+
+pointer:
+    '*'
+    | '*' type_qualifier_list
+    | '*' pointer
+    | '*' type_qualifier_list pointer
+    ;
+
+type_qualifier_list:
+    type_qualifier
+    | type_qualifier_list type_qualifier
+    ;
+
+parameter_type_list:
+    parameter_list
+    | parameter_list ',' '...'
+    ;
+
+parameter_list:
+    parameter_declaration
+    | parameter_list ',' parameter_declaration
+    ;
+
+parameter_declaration:
+    declaration_specifiers declarator
+    | declaration_specifiers abstract_declarator
+    | declaration_specifiers
+    ;
+
+identifier_list:
+    IDENTIFIER
+    | identifier_list ',' IDENTIFIER
+    ;
+
+type_name:
+    specifier_qualifier_list
+    | specifier_qualifier_list abstract_declarator
+    ;
+
+abstract_declarator:
+    pointer
+    | direct_abstract_declarator
+    | pointer direct_abstract_declarator
+    ;
+
+direct_abstract_declarator:
+    '(' abstract_declarator ')'
+    | '[' ']'
+    | '[' assignment_expression ']'
+    | '[' '*' ']'
+    | direct_abstract_declarator '[' ']'
+    | direct_abstract_declarator '[' assignment_expression ']'
+    | direct_abstract_declarator '[' '*' ']'
+    | '(' ')'
+    | '(' parameter_type_list ')'
+    | direct_abstract_declarator '(' ')'
+    | direct_abstract_declarator '(' parameter_type_list ')'
+    ;
+
+typedef_name:
+    IDENTIFIER
+    ;
+
+# Initializers (C99 designated initializers)
+initializer:
+    assignment_expression
+    | '{' initializer_list '}'
+    | '{' initializer_list ',' '}'
+    ;
+
+initializer_list:
+    designation initializer
+    | initializer
+    | initializer_list ',' designation initializer
+    | initializer_list ',' initializer
+    ;
+
+designation:
+    designator_list '='
+    ;
+
+designator_list:
+    designator
+    | designator_list designator
+    ;
+
+designator:
+    '[' constant_expression ']'
+    | '.' IDENTIFIER
+    ;
+
+# Statements (C99 extensions)
+statement:
+    labeled_statement
+    | compound_statement
+    | expression_statement
+    | selection_statement
+    | iteration_statement
+    | jump_statement
+    ;
+
+labeled_statement:
+    IDENTIFIER ':' statement
+    | 'case' constant_expression ':' statement
+    | 'default' ':' statement
+    ;
+
+# C99 allows declarations mixed with statements
+compound_statement:
+    '{' '}'
+    | '{' block_item_list '}'
+    ;
+
+block_item_list:
+    block_item
+    | block_item_list block_item
+    ;
+
+block_item:
+    declaration
+    | statement
+    ;
+
+expression_statement:
+    ';'
+    | expression ';'
+    ;
+
+selection_statement:
+    'if' '(' expression ')' statement
+    | 'if' '(' expression ')' statement 'else' statement
+    | 'switch' '(' expression ')' statement
+    ;
+
+# C99 for loop with declarations
+iteration_statement:
+    'while' '(' expression ')' statement
+    | 'do' statement 'while' '(' expression ')' ';'
+    | 'for' '(' expression_statement expression_statement ')' statement
+    | 'for' '(' expression_statement expression_statement expression ')' statement
+    | 'for' '(' declaration expression_statement ')' statement
+    | 'for' '(' declaration expression_statement expression ')' statement
+    ;
+
+jump_statement:
+    'goto' IDENTIFIER ';'
+    | 'continue' ';'
+    | 'break' ';'
+    | 'return' ';'
+    | 'return' expression ';'
+    ;
+
+# Expressions
+expression:
+    assignment_expression
+    | expression ',' assignment_expression
+    ;
+
+assignment_expression:
+    conditional_expression
+    | unary_expression assignment_operator assignment_expression
+    ;
+
+assignment_operator:
+    '='
+    | '*='
+    | '/='
+    | '%='
+    | '+='
+    | '-='
+    | '<<='
+    | '>>='
+    | '&='
+    | '^='
+    | '|='
+    ;
+
+conditional_expression:
+    logical_or_expression
+    | logical_or_expression '?' expression ':' conditional_expression
+    ;
+
+constant_expression:
+    conditional_expression
+    ;
+
+logical_or_expression:
+    logical_and_expression
+    | logical_or_expression '||' logical_and_expression
+    ;
+
+logical_and_expression:
+    inclusive_or_expression
+    | logical_and_expression '&&' inclusive_or_expression
+    ;
+
+inclusive_or_expression:
+    exclusive_or_expression
+    | inclusive_or_expression '|' exclusive_or_expression
+    ;
+
+exclusive_or_expression:
+    and_expression
+    | exclusive_or_expression '^' and_expression
+    ;
+
+and_expression:
+    equality_expression
+    | and_expression '&' equality_expression
+    ;
+
+equality_expression:
+    relational_expression
+    | equality_expression '==' relational_expression
+    | equality_expression '!=' relational_expression
+    ;
+
+relational_expression:
+    shift_expression
+    | relational_expression '<' shift_expression
+    | relational_expression '>' shift_expression
+    | relational_expression '<=' shift_expression
+    | relational_expression '>=' shift_expression
+    ;
+
+shift_expression:
+    additive_expression
+    | shift_expression '<<' additive_expression
+    | shift_expression '>>' additive_expression
+    ;
+
+additive_expression:
+    multiplicative_expression
+    | additive_expression '+' multiplicative_expression
+    | additive_expression '-' multiplicative_expression
+    ;
+
+multiplicative_expression:
+    cast_expression
+    | multiplicative_expression '*' cast_expression
+    | multiplicative_expression '/' cast_expression
+    | multiplicative_expression '%' cast_expression
+    ;
+
+cast_expression:
+    unary_expression
+    | '(' type_name ')' cast_expression
+    ;
+
+unary_expression:
+    postfix_expression
+    | '++' unary_expression
+    | '--' unary_expression
+    | unary_operator cast_expression
+    | 'sizeof' unary_expression
+    | 'sizeof' '(' type_name ')'
+    ;
+
+unary_operator:
+    '&'
+    | '*'
+    | '+'
+    | '-'
+    | '~'
+    | '!'
+    ;
+
+postfix_expression:
+    primary_expression
+    | postfix_expression '[' expression ']'
+    | postfix_expression '(' ')'
+    | postfix_expression '(' argument_expression_list ')'
+    | postfix_expression '.' IDENTIFIER
+    | postfix_expression '->' IDENTIFIER
+    | postfix_expression '++'
+    | postfix_expression '--'
+    | '(' type_name ')' '{' initializer_list '}'
+    | '(' type_name ')' '{' initializer_list ',' '}'
+    ;
+
+primary_expression:
+    IDENTIFIER
+    | CONSTANT
+    | STRING_LITERAL
+    | '(' expression ')'
+    ;
+
+argument_expression_list:
+    assignment_expression
+    | argument_expression_list ',' assignment_expression
+    ;
+
+# Tokens (C99 extensions)
+CONSTANT:
+    INTEGER_CONSTANT
+    | CHARACTER_CONSTANT
+    | FLOATING_CONSTANT
+    | ENUMERATION_CONSTANT
+    ;
+
+# C99 hexadecimal floating constants
+FLOATING_CONSTANT:
+    DECIMAL_FLOATING_CONSTANT
+    | HEXADECIMAL_FLOATING_CONSTANT
+    ;
+
+DECIMAL_FLOATING_CONSTANT:
+    FRACTIONAL_CONSTANT EXPONENT_PART? FLOATING_SUFFIX?
+    | DIGIT_SEQUENCE EXPONENT_PART FLOATING_SUFFIX?
+    ;
+
+HEXADECIMAL_FLOATING_CONSTANT:
+    HEXADECIMAL_PREFIX HEXADECIMAL_FRACTIONAL_CONSTANT BINARY_EXPONENT_PART? FLOATING_SUFFIX?
+    | HEXADECIMAL_PREFIX HEXADECIMAL_DIGIT_SEQUENCE BINARY_EXPONENT_PART FLOATING_SUFFIX?
+    ;
+
+HEXADECIMAL_FRACTIONAL_CONSTANT:
+    HEXADECIMAL_DIGIT_SEQUENCE? '.' HEXADECIMAL_DIGIT_SEQUENCE
+    | HEXADECIMAL_DIGIT_SEQUENCE '.'
+    ;
+
+BINARY_EXPONENT_PART:
+    'p' SIGN? DIGIT_SEQUENCE
+    | 'P' SIGN? DIGIT_SEQUENCE
+    ;
+
+HEXADECIMAL_DIGIT_SEQUENCE:
+    HEXADECIMAL_DIGIT+
+    ;
+
+# Standard tokens from C89
+INTEGER_CONSTANT:
+    DECIMAL_CONSTANT INTEGER_SUFFIX?
+    | OCTAL_CONSTANT INTEGER_SUFFIX?
+    | HEXADECIMAL_CONSTANT INTEGER_SUFFIX?
+    ;
+
+DECIMAL_CONSTANT:
+    NONZERO_DIGIT DIGIT*
+    ;
+
+OCTAL_CONSTANT:
+    '0' OCTAL_DIGIT*
+    ;
+
+HEXADECIMAL_CONSTANT:
+    HEXADECIMAL_PREFIX HEXADECIMAL_DIGIT+
+    ;
+
+HEXADECIMAL_PREFIX:
+    '0x'
+    | '0X'
+    ;
+
+NONZERO_DIGIT:
+    [1-9]
+    ;
+
+DIGIT:
+    [0-9]
+    ;
+
+OCTAL_DIGIT:
+    [0-7]
+    ;
+
+HEXADECIMAL_DIGIT:
+    [0-9a-fA-F]
+    ;
+
+INTEGER_SUFFIX:
+    UNSIGNED_SUFFIX LONG_SUFFIX?
+    | UNSIGNED_SUFFIX LONG_LONG_SUFFIX
+    | LONG_SUFFIX UNSIGNED_SUFFIX?
+    | LONG_LONG_SUFFIX UNSIGNED_SUFFIX?
+    ;
+
+UNSIGNED_SUFFIX:
+    'u'
+    | 'U'
+    ;
+
+LONG_SUFFIX:
+    'l'
+    | 'L'
+    ;
+
+# C99 long long suffix
+LONG_LONG_SUFFIX:
+    'll'
+    | 'LL'
+    ;
+
+CHARACTER_CONSTANT:
+    '\'' C_CHAR_SEQUENCE '\''
+    | 'L\'' C_CHAR_SEQUENCE '\''
+    ;
+
+C_CHAR_SEQUENCE:
+    C_CHAR+
+    ;
+
+C_CHAR:
+    [^'\\\n]
+    | ESCAPE_SEQUENCE
+    ;
+
+ESCAPE_SEQUENCE:
+    SIMPLE_ESCAPE_SEQUENCE
+    | OCTAL_ESCAPE_SEQUENCE
+    | HEXADECIMAL_ESCAPE_SEQUENCE
+    | UNIVERSAL_CHARACTER_NAME
+    ;
+
+SIMPLE_ESCAPE_SEQUENCE:
+    '\\'['\\\'"?abfnrtv]
+    ;
+
+OCTAL_ESCAPE_SEQUENCE:
+    '\\' OCTAL_DIGIT
+    | '\\' OCTAL_DIGIT OCTAL_DIGIT
+    | '\\' OCTAL_DIGIT OCTAL_DIGIT OCTAL_DIGIT
+    ;
+
+HEXADECIMAL_ESCAPE_SEQUENCE:
+    '\\x' HEXADECIMAL_DIGIT+
+    ;
+
+FRACTIONAL_CONSTANT:
+    DIGIT_SEQUENCE? '.' DIGIT_SEQUENCE
+    | DIGIT_SEQUENCE '.'
+    ;
+
+EXPONENT_PART:
+    'e' SIGN? DIGIT_SEQUENCE
+    | 'E' SIGN? DIGIT_SEQUENCE
+    ;
+
+SIGN:
+    '+'
+    | '-'
+    ;
+
+DIGIT_SEQUENCE:
+    DIGIT+
+    ;
+
+FLOATING_SUFFIX:
+    'f'
+    | 'l'
+    | 'F'
+    | 'L'
+    ;
+
+ENUMERATION_CONSTANT:
+    IDENTIFIER
+    ;
+
+STRING_LITERAL:
+    '"' S_CHAR_SEQUENCE? '"'
+    | 'L"' S_CHAR_SEQUENCE? '"'
+    ;
+
+S_CHAR_SEQUENCE:
+    S_CHAR+
+    ;
+
+S_CHAR:
+    [^"\\\n]
+    | ESCAPE_SEQUENCE
+    ;
+
+IDENTIFIER:
+    IDENTIFIER_NONDIGIT (IDENTIFIER_NONDIGIT | DIGIT)*
+    ;
+
+IDENTIFIER_NONDIGIT:
+    NONDIGIT
+    | UNIVERSAL_CHARACTER_NAME
+    ;
+
+NONDIGIT:
+    [a-zA-Z_]
+    ;
+
+UNIVERSAL_CHARACTER_NAME:
+    '\\u' HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT
+    | '\\U' HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT HEXADECIMAL_DIGIT
+    ;
+    | init_declarator_list ',' init_declarator
+    ;
+
+init_declarator:
+    declarator
+    | declarator '=' initializer
+    ;
+
+# Storage class specifiers
+storage_class_specifier:
+    'typedef'
+    | 'extern'
+    | 'static'
+    | 'auto'
+    | 'register'
+    ;
+
+# Type specifiers (C99 additions)
+type_specifier:
+    'void'
+    | 'char'
+    | 'short'
+    | 'int'
+    | 'long'
+    | 'float'
+    | 'double'
+    | 'signed'
+    | 'unsigned'
+    | '_Bool'           # C99: Boolean type
+    | '_Complex'        # C99: Complex types
+    | '_Imaginary'      # C99: Imaginary types
+    | struct_or_union_specifier
+    | enum_specifier
+    | typedef_name
+    ;
+
+# Function specifiers (C99)
+function_specifier:
+    'inline'            # C99: Inline functions
+    ;
+
+struct_or_union_specifier:
+    struct_or_union IDENTIFIER '{' struct_declaration_list '}'
+    | struct_or_union '{' struct_declaration_list '}'
+    | struct_or_union IDENTIFIER
+    ;
+
+struct_or_union:
+    'struct'
+    | 'union'
+    ;
+
+struct_declaration_list:
+    struct_declaration
+    | struct_declaration_list struct_declaration
+    ;
+
+struct_declaration:
+    specifier_qualifier_list struct_declarator_list ';'
+    ;
+
+specifier_qualifier_list:
+    type_specifier specifier_qualifier_list
+    | type_specifier
+    | type_qualifier specifier_qualifier_list
+    | type_qualifier
+    ;
+
+struct_declarator_list:
+    struct_declarator
+    | struct_declarator_list ',' struct_declarator
+    ;
+
+struct_declarator:
+    declarator
+    | ':' constant_expression
+    | declarator ':' constant_expression
+    ;
+
+enum_specifier:
+    'enum' '{' enumerator_list '}'
+    | 'enum' IDENTIFIER '{' enumerator_list '}'
+    | 'enum' IDENTIFIER
+    | 'enum' '{' enumerator_list ',' '}'     # C99: Trailing comma
+    | 'enum' IDENTIFIER '{' enumerator_list ',' '}'
+    ;
+
+enumerator_list:
+    enumerator
+    | enumerator_list ',' enumerator
+    ;
+
+enumerator:
+    IDENTIFIER
+    | IDENTIFIER '=' constant_expression
+    ;
+
+# Type qualifiers (C99 additions)
+type_qualifier:
+    'const'
+    | 'volatile'
+    | 'restrict'        # C99: Restrict qualifier
+    ;
+
+# Declarators
+declarator:
+    pointer direct_declarator
+    | direct_declarator
+    ;
+
+direct_declarator:
+    IDENTIFIER
+    | '(' declarator ')'
+    | direct_declarator '[' type_qualifier_list assignment_expression ']'  # C99: VLA
+    | direct_declarator '[' 'static' type_qualifier_list assignment_expression ']'
+    | direct_declarator '[' type_qualifier_list 'static' assignment_expression ']'
+    | direct_declarator '[' type_qualifier_list '*' ']'  # C99: VLA
+    | direct_declarator '[' '*' ']'
+    | direct_declarator '[' assignment_expression ']'
+    | direct_declarator '[' ']'
+    | direct_declarator '(' parameter_type_list ')'
+    | direct_declarator '(' identifier_list ')'
+    | direct_declarator '(' ')'
+    ;
+
+pointer:
+    '*'
+    | '*' type_qualifier_list
+    | '*' pointer
+    | '*' type_qualifier_list pointer
+    ;
+
+type_qualifier_list:
+    type_qualifier
+    | type_qualifier_list type_qualifier
+    ;
+
+parameter_type_list:
+    parameter_list
+    | parameter_list ',' '...'
+    ;
+
+parameter_list:
+    parameter_declaration
+    | parameter_list ',' parameter_declaration
+    ;
+
+parameter_declaration:
+    declaration_specifiers declarator
+    | declaration_specifiers abstract_declarator
+    | declaration_specifiers
+    ;
+
+identifier_list:
+    IDENTIFIER
+    | identifier_list ',' IDENTIFIER
+    ;
+
+type_name:
+    specifier_qualifier_list
+    | specifier_qualifier_list abstract_declarator
+    ;
+
+abstract_declarator:
+    pointer
+    | direct_abstract_declarator
+    | pointer direct_abstract_declarator
+    ;
+
+direct_abstract_declarator:
+    '(' abstract_declarator ')'
+    | '[' ']'
+    | '[' assignment_expression ']'
+    | '[' '*' ']'       # C99: VLA
+    | direct_abstract_declarator '[' ']'
+    | direct_abstract_declarator '[' assignment_expression ']'
+    | direct_abstract_declarator '[' '*' ']'
+    | '(' ')'
+    | '(' parameter_type_list ')'
+    | direct_abstract_declarator '(' ')'
+    | direct_abstract_declarator '(' parameter_type_list ')'
+    ;
+
+typedef_name:
+    IDENTIFIER
+    ;
+
+# Initializers (C99 designated initializers)
+initializer:
+    assignment_expression
+    | '{' initializer_list '}'
+    | '{' initializer_list ',' '}'
+    ;
+
+initializer_list:
+    designation initializer
+    | initializer
+    | initializer_list ',' designation initializer
+    | initializer_list ',' initializer
+    ;
+
+designation:
+    designator_list '='
+    ;
+
+designator_list:
+    designator
+    | designator_list designator
+    ;
+
+designator:
+    '[' constant_expression ']'
+    | '.' IDENTIFIER
+    ;
+
+# Statements
+statement:
+    labeled_statement
+    | compound_statement
+    | expression_statement
+    | selection_statement
+    | iteration_statement
+    | jump_statement
+    ;
+
+labeled_statement:
+    IDENTIFIER ':' statement
+    | 'case' constant_expression ':' statement
+    | 'default' ':' statement
+    ;
+
+compound_statement:
+    '{' '}'
+    | '{' block_item_list '}'
+    ;
+
+block_item_list:
+    block_item
+    | block_item_list block_item
+    ;
+
+block_item:
+    declaration
+    | statement
+    ;
+
+expression_statement:
+    ';'
+    | expression ';'
+    ;
+
+selection_statement:
+    'if' '(' expression ')' statement
+    | 'if' '(' expression ')' statement 'else' statement
+    | 'switch' '(' expression ')' statement
+    ;
+
+iteration_statement:
+    'while' '(' expression ')' statement
+    | 'do' statement 'while' '(' expression ')' ';'
+    | 'for' '(' expression_statement expression_statement ')' statement
+    | 'for' '(' expression_statement expression_statement expression ')' statement
+    | 'for' '(' declaration expression_statement ')' statement          # C99: for loop declarations
+    | 'for' '(' declaration expression_statement expression ')' statement
+    ;
+
+jump_statement:
+    'goto' IDENTIFIER ';'
+    | 'continue' ';'
+    | 'break' ';'
+    | 'return' ';'
+    | 'return' expression ';'
+    ;
+
+# Expressions
+expression:
+    assignment_expression
+    | expression ',' assignment_expression
+    ;
+
+assignment_expression:
+    conditional_expression
+    | unary_expression assignment_operator assignment_expression
+    ;
+
+assignment_operator:
+    '='
+    | '*='
+    | '/='
+    | '%='
+    | '+='
+    | '-='
+    | '<<='
+    | '>>='
+    | '&='
+    | '^='
+    | '|='
+    ;
+
+conditional_expression:
+    logical_or_expression
+    | logical_or_expression '?' expression ':' conditional_expression
+    ;
+
+constant_expression:
+    conditional_expression
+    ;
+
+logical_or_expression:
+    logical_and_expression
+    | logical_or_expression '||' logical_and_expression
+    ;
+
+logical_and_expression:
+    inclusive_or_expression
+    | logical_and_expression '&&' inclusive_or_expression
+    ;
+
+inclusive_or_expression:
+    exclusive_or_expression
+    | inclusive_or_expression '|' exclusive_or_expression
+    ;
+
+exclusive_or_expression:
+    and_expression
+    | exclusive_or_expression '^' and_expression
+    ;
+
+and_expression:
+    equality_expression
+    | and_expression '&' equality_expression
+    ;
+
+equality_expression:
+    relational_expression
+    | equality_expression '==' relational_expression
+    | equality_expression '!=' relational_expression
+    ;
+
+relational_expression:
+    shift_expression
+    | relational_expression '<' shift_expression
+    | relational_expression '>' shift_expression
+    | relational_expression '<=' shift_expression
+    | relational_expression '>=' shift_expression
+    ;
+
+shift_expression:
+    additive_expression
+    | shift_expression '<<' additive_expression
+    | shift_expression '>>' additive_expression
+    ;
+
+additive_expression:
+    multiplicative_expression
+    | additive_expression '+' multiplicative_expression
+    | additive_expression '-' multiplicative_expression
+    ;
+
+multiplicative_expression:
+    cast_expression
+    | multiplicative_expression '*' cast_expression
+    | multiplicative_expression '/' cast_expression
+    | multiplicative_expression '%' cast_expression
+    ;
+
+cast_expression:
+    unary_expression
+    | '(' type_name ')' cast_expression
+    ;
+
+unary_expression:
+    postfix_expression
+    | '++' unary_expression
+    | '--' unary_expression
+    | unary_operator cast_expression
+    | 'sizeof' unary_expression
+    | 'sizeof' '(' type_name ')'
+    ;
+
+unary_operator:
+    '&'
+    | '*'
+    | '+'
+    | '-'
+    | '~'
+    | '!'
+    ;
+
+postfix_expression:
+    primary_expression
+    | postfix_expression '[' expression ']'
+    | postfix_expression '(' ')'
+    | postfix_expression '(' argument_expression_list ')'
+    | postfix_expression '.' IDENTIFIER
+    | postfix_expression '->' IDENTIFIER
+    | postfix_expression '++'
+    | postfix_expression '--'
+    | '(' type_name ')' '{' initializer_list '}'        # C99: Compound literals
+    | '(' type_name ')' '{' initializer_list ',' '}'
+    ;
+
+primary_expression:
+    IDENTIFIER
+    | CONSTANT
+    | STRING_LITERAL
+    | '(' expression ')'
+    ;
+
+argument_expression_list:
+    assignment_expression
+    | argument_expression_list ',' assignment_expression
+    ;
+
+# Terminals (tokens) - C99 additions
+IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*
+CONSTANT: INTEGER_CONSTANT | CHARACTER_CONSTANT | FLOATING_CONSTANT | ENUMERATION_CONSTANT
+STRING_LITERAL: "([^"\\]|\\.)*"
+INTEGER_CONSTANT: [0-9]+[uUlLzZ]*     # C99: long long, size_t suffixes
+CHARACTER_CONSTANT: '([^'\\]|\\.)+'
+FLOATING_CONSTANT: [0-9]*\.[0-9]+([eE][+-]?[0-9]+)?[fFlL]? | 0[xX][0-9a-fA-F]*\.[0-9a-fA-F]+[pP][+-]?[0-9]+[fFlL]?  # C99: Hex floats
+ENUMERATION_CONSTANT: IDENTIFIER
+
+# Keywords (C99 additions)
+KEYWORDS: auto break case char const continue default do double else enum extern float for goto if inline int long register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while _Bool _Complex _Imaginary
+
+# Operators and punctuators
+OPERATORS: + - * / % ++ -- & | ^ ~ ! << >> < > <= >= == != && || ? : = += -= *= /= %= &= |= ^= <<= >>= -> . [ ] ( ) { } , ; ...
+
+# Pragmas (C99)
+PRAGMA: '#pragma' .* '\n'

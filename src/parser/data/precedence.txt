@@ -1,0 +1,94 @@
+# Operator Precedence Table for C Parser
+# Higher precedence number = higher precedence
+# Based on C23 standard operator precedence
+
+# Precedence Level 16 (Highest)
+() [] -> .                          16  # Postfix operators
+
+# Precedence Level 15
+++ -- (postfix)                     15  # Postfix increment/decrement
+
+# Precedence Level 14
+++ -- (prefix)                      14  # Prefix increment/decrement
++ - (unary)                         14  # Unary plus/minus
+! ~                                 14  # Logical NOT, bitwise NOT
+* (dereference)                     14  # Dereference
+& (address-of)                      14  # Address-of
+sizeof                              14  # sizeof operator
+_Alignof                            14  # Alignment operator (C11+)
+typeof                              14  # typeof operator (C23)
+typeof_unqual                       14  # typeof_unqual operator (C23)
+(type)                              14  # Type cast
+
+# Precedence Level 13
+* / %                               13  # Multiplicative operators
+
+# Precedence Level 12
++ -                                 12  # Additive operators
+
+# Precedence Level 11
+<< >>                               11  # Shift operators
+
+# Precedence Level 10
+< <= > >=                           10  # Relational operators
+
+# Precedence Level 9
+== !=                                9  # Equality operators
+
+# Precedence Level 8
+& (bitwise)                          8  # Bitwise AND
+
+# Precedence Level 7
+^                                    7  # Bitwise XOR
+
+# Precedence Level 6
+| (bitwise)                          6  # Bitwise OR
+
+# Precedence Level 5
+&&                                   5  # Logical AND
+
+# Precedence Level 4
+||                                   4  # Logical OR
+
+# Precedence Level 3
+?:                                   3  # Conditional (ternary) operator
+
+# Precedence Level 2
+= += -= *= /= %= &= |= ^= <<= >>=    2  # Assignment operators
+
+# Precedence Level 1 (Lowest)
+,                                    1  # Comma operator
+
+# Special operators
+_Generic                            14  # Generic selection (C11+)
+_Static_assert                      14  # Static assertion (C11+)
+
+# Associativity Rules
+# Left-to-right associativity (default for most operators)
+LEFT_ASSOC: () [] -> . * / % + - << >> < <= > >= == != & ^ | && || ,
+
+# Right-to-left associativity
+RIGHT_ASSOC: ++ -- (prefix) + - (unary) ! ~ * (dereference) & (address-of) sizeof _Alignof typeof typeof_unqual (type) ?: = += -= *= /= %= &= |= ^= <<= >>=
+
+# Non-associative (cannot be chained)
+NON_ASSOC: < <= > >= == !=
+
+# Special precedence notes:
+# 1. Postfix operators have higher precedence than prefix operators
+# 2. Unary operators are right-associative
+# 3. Assignment operators are right-associative
+# 4. The conditional operator ?: is right-associative
+# 5. Comma operator has the lowest precedence
+# 6. Function calls () and array subscripts [] have the highest precedence
+# 7. Member access operators (. and ->) have very high precedence
+
+# C23 specific additions:
+# - typeof and typeof_unqual operators
+# - Enhanced _BitInt support
+# - Attribute specifiers don't affect precedence
+
+# Parser implementation notes:
+# - Use precedence climbing or operator precedence parsing
+# - Handle special cases like sizeof and cast operators
+# - Consider context-sensitive parsing for ambiguous cases
+# - Implement proper error recovery for malformed expressions

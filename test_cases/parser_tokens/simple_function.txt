@@ -1,0 +1,11 @@
+# Função simples: int main() { return 0; }
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'main' │ L1:C5 │ Identificadores
+3. LEFT_PAREN           │ '(' │ L1:C9 │ Delimitadores
+4. RIGHT_PAREN          │ ')' │ L1:C10 │ Delimitadores
+5. LEFT_BRACE           │ '{' │ L1:C12 │ Delimitadores
+6. RETURN               │ 'return' │ L1:C14 │ Palavras-chave
+7. INTEGER_LITERAL      │ '0' │ L1:C21 │ Literais
+8. SEMICOLON            │ ';' │ L1:C22 │ Pontuação
+9. RIGHT_BRACE          │ '}' │ L1:C24 │ Delimitadores
+10. END_OF_FILE         │ '' │ L1:C25 │ Outros

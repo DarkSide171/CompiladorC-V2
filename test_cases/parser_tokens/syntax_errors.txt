@@ -1,0 +1,31 @@
+# Arquivo de teste para detecção de erros de sintaxe no parser
+# Este arquivo contém vários erros de sintaxe para testar o sistema de detecção
+
+# Teste 1: Ponto e vírgula ausente após declaração de variável
+1. INT                  │ 'int' │ L1:C1 │ Palavras-chave
+2. IDENTIFIER           │ 'x' │ L1:C5 │ Identificadores
+3. ASSIGN               │ '=' │ L1:C7 │ Operadores
+4. INTEGER_LITERAL      │ '5' │ L1:C9 │ Literais
+# Ponto e vírgula ausente aqui - deve causar erro
+5. INT                  │ 'int' │ L2:C1 │ Palavras-chave
+6. IDENTIFIER           │ 'y' │ L2:C5 │ Identificadores
+7. SEMICOLON            │ ';' │ L2:C6 │ Pontuação
+
+# Teste 2: Parênteses desbalanceados em chamada de função
+8. INT                  │ 'int' │ L4:C1 │ Palavras-chave
+9. IDENTIFIER           │ 'main' │ L4:C5 │ Identificadores
+10. LEFT_PAREN          │ '(' │ L4:C9 │ Delimitadores
+11. RIGHT_PAREN         │ ')' │ L4:C10 │ Delimitadores
+12. LEFT_BRACE          │ '{' │ L4:C12 │ Delimitadores
+13. IDENTIFIER          │ 'printf' │ L5:C5 │ Identificadores
+14. LEFT_PAREN          │ '(' │ L5:C11 │ Delimitadores
+15. STRING_LITERAL      │ '"hello"' │ L5:C12 │ Literais
+# Parêntese de fechamento ausente - deve causar erro
+16. SEMICOLON           │ ';' │ L5:C19 │ Pontuação
+17. RIGHT_BRACE         │ '}' │ L6:C1 │ Delimitadores
+
+# Teste 3: Sequência de tokens inválida
+18. INCREMENT           │ '++' │ L8:C1 │ Operadores
+19. INCREMENT           │ '++' │ L8:C3 │ Operadores
+20. IDENTIFIER          │ 'x' │ L8:C5 │ Identificadores
+21. SEMICOLON           │ ';' │ L8:C6 │ Pontuação
